@@ -61,6 +61,7 @@ RNA_seq::RNA_seq(String<Dna5> seq, string source, string gene_id, int gene_stran
 
 //Copy Constructor
 RNA_seq::RNA_seq(const RNA_seq& rhs){
+    assign(sequence,rhs.sequence);
     source = rhs.source;
     gene_id = rhs.gene_id;
     gene_strand = rhs.gene_strand;
@@ -73,6 +74,7 @@ RNA_seq::RNA_seq(const RNA_seq& rhs){
 RNA_seq& RNA_seq::operator=(const RNA_seq& rhs){
     if(&rhs == this)
         return *this;
+    assign(sequence,rhs.sequence);
     source = rhs.source;
     gene_id = rhs.gene_id;
     gene_strand = rhs.gene_strand;

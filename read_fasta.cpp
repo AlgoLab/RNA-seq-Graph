@@ -138,7 +138,7 @@ void add_entry(Map &m, table_entry* entry, char l_r){
             }//End_If
         }//End_If
     }else{
-       Map::iterator it;
+        Map::iterator it;
         it = m.find(entry->get_right_fingerprint());
         if(it == m.end()){
             element_table el;
@@ -150,7 +150,7 @@ void add_entry(Map &m, table_entry* entry, char l_r){
             table_entry* prev;
             bool found = 0;
             do{
-                if(temp->get_left_fingerprint() == entry->get_left_fingerprint()){
+                if(temp->get_right_fingerprint() == entry->get_right_fingerprint()){
                     found = 1;
                     break;
                 }
