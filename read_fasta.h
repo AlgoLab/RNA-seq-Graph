@@ -32,7 +32,7 @@ string binary_conversion(string);
 unsigned long long fingerprint(string);
 
 //Parse Fasta Information
-table_entry* parse_fasta(String<Dna>, string);
+table_entry* parse_fasta(String<Dna5>, string);
 
 //Add entries in the Hash Table
 void add_entry(Map &, table_entry*, char);

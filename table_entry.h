@@ -22,10 +22,10 @@ class table_entry{
 
     public:
     //Constructors
-    table_entry(String<Dna>, unsigned long long, unsigned long long);
-    table_entry(String<Dna>, string, string, unsigned long long, unsigned long long);
-    table_entry(String<Dna>, string, string, int, unsigned long long, unsigned long long);
-    table_entry(String<Dna>, string, string, int, int, long, int, unsigned long long, unsigned long long);
+    table_entry(String<Dna5>, unsigned long long, unsigned long long);
+    table_entry(String<Dna5>, string, string, unsigned long long, unsigned long long);
+    table_entry(String<Dna5>, string, string, int, unsigned long long, unsigned long long);
+    table_entry(String<Dna5>, string, string, int, int, long, int, unsigned long long, unsigned long long);
     ~table_entry();
     //Copy constructor
     table_entry(const table_entry&);
@@ -47,6 +47,7 @@ class table_entry{
     int get_junction_offset();
     table_entry* get_chain_next();
     table_entry* get_chain_prev();
+long get_frequency();
     //Increase / Decrease Sequence Frequency
     void increase_freq();
     void decrease_freq();

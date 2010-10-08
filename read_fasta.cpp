@@ -52,7 +52,7 @@ unsigned long long fingerprint(string s){
 }//End_Method
 
 ////Parse Fasta Information
-table_entry* parse_fasta(String<Dna> seq, string meta){
+table_entry* parse_fasta(String<Dna5> seq, string meta){
     table_entry* el = NULL;
     string left_seq;
     assign(left_seq,prefix(seq,length(seq)/2));
@@ -118,7 +118,6 @@ void add_entry(Map &m, table_entry* entry, char l_r){
             el.p = entry;
             m[entry->get_left_fingerprint()] = el;
         }else{
-            m[entry->get_left_fingerprint()].unspliced = 0;
             table_entry* temp = m[entry->get_left_fingerprint()].p;
             table_entry* prev;
             bool found = 0;
@@ -133,6 +132,7 @@ void add_entry(Map &m, table_entry* entry, char l_r){
             if(found){
                 temp->increase_freq();
             }else{
+		m[entry->get_left_fingerprint()].unspliced = 0;
                 prev->set_next(entry);
                 entry->set_prev(prev);
             }//End_If
@@ -145,21 +145,22 @@ void add_entry(Map &m, table_entry* entry, char l_r){
             el.unspliced = 1;
             el.p = entry;
             m[entry->get_right_fingerprint()] = el;
-        }else{
+        }else{   
             table_entry* temp = m[entry->get_right_fingerprint()].p;
             table_entry* prev;
             bool found = 0;
             do{
-                if(temp->get_right_fingerprint() == entry->get_right_fingerprint()){
+                if(temp->get_left_fingerprint() == entry->get_left_fingerprint()){
                     found = 1;
-                    break;
+                    //break;
                 }
                 prev = temp;
                 temp = temp->get_next();
             }while(temp != NULL && !found);
             if(found){
-                temp->increase_freq();
+                prev->increase_freq();
             }else{
+		m[entry->get_right_fingerprint()].unspliced = 0;
                 prev->set_next(entry);
                 entry->set_prev(prev);
             }//End_If
@@ -179,7 +180,7 @@ tables read_fasta(char* file_name){
         fstrm.open(file_name, ::std::ios_base::in | ::std::ios_base::binary);
         if(fstrm.is_open()){
             String<char> fasta_tag;
-            String<Dna> fasta_seq;
+            String<Dna5> fasta_seq;
             int c = 0;
             while(!fstrm.eof()){
                 c++;

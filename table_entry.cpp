@@ -1,7 +1,7 @@
 #include "table_entry.h"
 
 //Constructors
-table_entry::table_entry(String<Dna> seq,
+table_entry::table_entry(String<Dna5> seq,
                          unsigned long long left_f, unsigned long long right_f){
     short_read = new RNA_seq(seq);
     this->next = NULL;
@@ -14,7 +14,7 @@ table_entry::table_entry(String<Dna> seq,
     this->frequency = 1;
 }
 
-table_entry::table_entry(String<Dna> seq, string source, string gene_id, 
+table_entry::table_entry(String<Dna5> seq, string source, string gene_id, 
                          unsigned long long left_f, unsigned long long right_f){
     short_read = new RNA_seq(seq, source, gene_id);
     this->next = NULL;
@@ -27,7 +27,7 @@ table_entry::table_entry(String<Dna> seq, string source, string gene_id,
     this->frequency = 1;
 }
 
-table_entry::table_entry(String<Dna> seq, string source, string gene_id, 
+table_entry::table_entry(String<Dna5> seq, string source, string gene_id, 
                          int gene_strand,
                          unsigned long long left_f, unsigned long long right_f){
     short_read = new RNA_seq(seq, source, gene_id, gene_strand);
@@ -41,7 +41,7 @@ table_entry::table_entry(String<Dna> seq, string source, string gene_id,
     this->frequency = 1;
 }
 
-table_entry::table_entry(String<Dna> seq, string source, string gene_id, 
+table_entry::table_entry(String<Dna5> seq, string source, string gene_id, 
                          int gene_strand, int transcript_id, long offset, int clone_end,
                          unsigned long long left_f, unsigned long long right_f){
     short_read = new RNA_seq(seq, source, gene_id, gene_strand, transcript_id, offset, clone_end);
@@ -148,6 +148,10 @@ table_entry* table_entry::get_chain_next(){
 
 table_entry* table_entry::get_chain_prev(){
     return chain_prev;
+}
+
+long table_entry::get_frequency(){
+    return frequency;
 }
 
 ///Increase / Decrease Sequence Frequency
