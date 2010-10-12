@@ -181,30 +181,82 @@ void print_unspliced_chains(tables table, int overlap){
     }//End_For
 }//End_Method
 
-/***********************************/
-/* Merge previous built unspliced  */
-/* chains                          */
-/***********************************/
+/******************************/
+/* Merge two chains based on  */
+/* their overlap              */
+/******************************/
+string merge_chains(string head, int offset, string to_be_chained){
+    if(to_be_chained.length() > head.length() - offset){
+        long l = to_be_chained.length() - (head.length() - offset);
+        //::std::cout << head.substr(offset) << ::std::endl;
+        //::std::cout << to_be_chained.substr(0, to_be_chained.length() - l) << ::std::endl;
+        if(head.substr(offset) == to_be_chained.substr(0, to_be_chained.length() - l)){ 
+            //::std::cout << to_be_chained.substr(to_be_chained.length() - l) << ::std::endl;
+            head.append(to_be_chained.substr(to_be_chained.length() - l));
+        }else{
+            return "";
+        }
+    }
+    return head;
+}
+
+/*************************************/
+/* Merge previous built unspliced    */
+/* chains with half sequence overlap */
+/*************************************/
 void merge_unspliced_chains(tables table){
     int c = 1;
+    map<unsigned long long, string> chain_map;
     Map::iterator it;
+    // 1 - Build a new table with the chains
     for(it=table.left_map.begin(); it != table.left_map.end(); it++){
         table_entry* t = (*it).second.p;
-        if((*it).second.unspliced && t->get_chain_prev() == NULL && t->get_chain_next() != NULL){
+        //Uncomment and substitute with the following to consider only chain longer than simple RNA-seqs
+        //if((*it).second.unspliced && t->get_chain_prev() == NULL && t->get_chain_next() != NULL){
+        if((*it).second.unspliced && t->get_chain_prev() == NULL){
             //Chains longer than simple RNA-seq
             table_entry* t_temp = t;
+            String<Dna5> seq = t_temp->get_short_read()->get_RNA_seq_sequence();
+            string chain;
+            assign(chain,seq);
+            t_temp = t_temp->get_chain_next();
             while(t_temp != NULL){
-                String<Dna5> seq = t_temp->get_short_read()->get_RNA_seq_sequence();
-                ::std::cout << c << " " << prefix(seq,length(seq)/2) << " " << suffix(seq,length(seq)/2);
-                ::std::cout << " " << t_temp->get_short_read()->get_RNA_seq_transcript_id();
-                ::std::cout << " " << t_temp->get_short_read()->get_RNA_seq_offset();
-                ::std::cout << ::std::endl;
+                seq = t_temp->get_short_read()->get_RNA_seq_sequence();
+                append(chain,suffix(seq,length(seq)/2));
+                //::std::cout << c << " " << prefix(seq,length(seq)/2) << " " << suffix(seq,length(seq)/2);
+                //::std::cout << " " << t_temp->get_short_read()->get_RNA_seq_transcript_id();
+                //::std::cout << " " << t_temp->get_short_read()->get_RNA_seq_offset();
+                //::std::cout << ::std::endl;
                 t_temp = t_temp->get_chain_next();
             }
-            ::std::cout << ::std::endl;
+            //::std::cout << c << " " << chain << ::std::endl;
+            chain_map[t->get_left_fingerprint()] = chain;
             c++;
         }//End_If
     }//End_For
+    // 2 - Merge the chains built
+    unsigned int rna_seq_length = length((*table.left_map.begin()).second.p->get_short_read()->get_RNA_seq_sequence());
+    map<unsigned long long, string>::iterator iter;
+    c = 0;
+    for(iter=chain_map.begin(); iter != chain_map.end(); iter++){
+        //c++;
+        //::std::cout << c << " " << (*iter).second << ::std::endl << ::std::endl;
+        for(unsigned int j=1; j<rna_seq_length/2; j++){
+            string segment;
+            assign(segment,infix((*iter).second,j,rna_seq_length/2+j));
+            if(chain_map.find(fingerprint(segment)) != chain_map.end()){
+                string merged = merge_chains((*iter).second, j, chain_map[fingerprint(segment)]);
+                if(merged != ""){
+                    (*iter).second = merged;
+                    chain_map.erase(fingerprint(segment));
+                }
+            }
+        }
+    }
+    for(iter=chain_map.begin(); iter != chain_map.end(); iter++){
+        c++;
+        ::std::cout << c << " " << (*iter).second << " - " << (*iter).second.length() << ::std::endl << ::std::endl;
+    }
 }//End_Method
 
 int main(int argc, char* argv[]){
