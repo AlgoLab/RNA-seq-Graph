@@ -19,6 +19,7 @@ typedef struct element_table{
 
 typedef std::map<unsigned long long, element_table> Map;
 
+
 //Hash tables
 typedef struct tables{
     Map left_map;
