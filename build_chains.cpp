@@ -1,6 +1,46 @@
 #include <iostream>
 
-#include "read_fasta.h"
+#include "build_chains.h"
+
+/**********************************/
+/* Print spliced RNA-seq          */
+/* These reads have more than one */
+/* entry in each hash table       */
+/* (left and right)               */
+/**********************************/
+void print_spliced(tables table){
+    int c = 1;
+    Map::iterator it;
+    for(it=table.left_map.begin(); it != table.left_map.end(); it++){
+        if(!(*it).second.unspliced){
+            table_entry* t = (*it).second.p;
+            if(!table.right_map[t->get_right_fingerprint()].unspliced){
+                while(t != NULL){
+                    String<Dna5> seq = t->get_short_read()->get_RNA_seq_sequence();
+                    ::std::cout << c << " " << prefix(seq,length(seq)/2) << " " << suffix(seq,length(seq)/2) << " - " << t->get_short_read()->get_RNA_seq_transcript_id() << " " << t->get_short_read()->get_RNA_seq_offset() << ::std::endl;
+                    c++;
+                    ::std::cout << ::std::endl;
+                    t = t->get_next();
+                }//End_While
+            }//End_If
+        }//End_If
+    }//End_For
+
+    for(it=table.right_map.begin(); it != table.right_map.end(); it++){
+        if(!(*it).second.unspliced){
+            table_entry* t = (*it).second.p;
+            if(!table.left_map[t->get_left_fingerprint()].unspliced){
+                while(t != NULL){
+                    String<Dna5> seq = t->get_short_read()->get_RNA_seq_sequence();
+                    ::std::cout << c << " " << prefix(seq,length(seq)/2) << " " << suffix(seq,length(seq)/2) << " - " << t->get_short_read()->get_RNA_seq_transcript_id() << " " << t->get_short_read()->get_RNA_seq_offset() << ::std::endl;
+                    c++;
+                    ::std::cout << ::std::endl;
+                    t = t->get_next();
+                }//End_While
+            }//End_If
+        }//End_If
+    }//End_For
+}//End_Method
 
 /********************************/
 /* Print unspliced RNA-seq      */
@@ -195,16 +235,16 @@ string merge_chains(string head, int offset, string to_be_chained){
             head.append(to_be_chained.substr(to_be_chained.length() - l));
         }else{
             return "";
-        }
-    }
+        }//End_If
+    }//End_If
     return head;
-}
+}//End_Method
 
 /*************************************/
 /* Merge previous built unspliced    */
 /* chains with half sequence overlap */
 /*************************************/
-void merge_unspliced_chains(tables table){
+map<unsigned long long, string> merge_unspliced_chains(tables table){
     int c = 1;
     map<unsigned long long, string> chain_map;
     Map::iterator it;
@@ -212,8 +252,8 @@ void merge_unspliced_chains(tables table){
     for(it=table.left_map.begin(); it != table.left_map.end(); it++){
         table_entry* t = (*it).second.p;
         //Uncomment and substitute with the following to consider only chain longer than simple RNA-seqs
-        //if((*it).second.unspliced && t->get_chain_prev() == NULL && t->get_chain_next() != NULL){
-        if((*it).second.unspliced && t->get_chain_prev() == NULL){
+        if((*it).second.unspliced && t->get_chain_prev() == NULL && t->get_chain_next() != NULL){
+        //if((*it).second.unspliced && t->get_chain_prev() == NULL){
             //Chains longer than simple RNA-seq
             table_entry* t_temp = t;
             String<Dna5> seq = t_temp->get_short_read()->get_RNA_seq_sequence();
@@ -228,7 +268,7 @@ void merge_unspliced_chains(tables table){
                 //::std::cout << " " << t_temp->get_short_read()->get_RNA_seq_offset();
                 //::std::cout << ::std::endl;
                 t_temp = t_temp->get_chain_next();
-            }
+            }//End_While
             //::std::cout << c << " " << chain << ::std::endl;
             chain_map[t->get_left_fingerprint()] = chain;
             c++;
@@ -249,57 +289,15 @@ void merge_unspliced_chains(tables table){
                 if(merged != ""){
                     (*iter).second = merged;
                     chain_map.erase(fingerprint(segment));
-                }
-            }
-        }
-    }
+                }//End_If
+            }//End_If
+        }//End_For
+    }//End_For
     for(iter=chain_map.begin(); iter != chain_map.end(); iter++){
         c++;
         ::std::cout << c << " " << (*iter).second << " - " << (*iter).second.length() << ::std::endl << ::std::endl;
-    }
+    }//End_For
+    return chain_map;
 }//End_Method
 
-int main(int argc, char* argv[]){
-    if(argc < 3){
-        ::std::cout << ::std::endl;
-        ::std::cout << "Usage: read_input <fasta_file> <option>" << ::std::endl;
-        ::std::cout << "options:" << ::std::endl;
-        ::std::cout << "\t 1 - Print hash table (left)" << ::std::endl;
-        ::std::cout << "\t 2 - Print unspliced RNA-seq sequences" << ::std::endl;
-        ::std::cout << "\t 3 - Build chains of unspliced reads with half sequence overlap" << ::std::endl;
-        ::std::cout << "\t 4 - Build chains of unspliced reads with specific overlap" << ::std::endl;
-        ::std::cout << "\t 5 - Merge chains built of unspliced reads with half sequence overlap" << ::std::endl;
-        ::std::cout << ::std::endl;
-        return 1;
-    }//End_If
 
-    tables table = read_fasta(argv[1]);
-    switch(::std::atoi(argv[2])){
-    case 1:
-        ::std::cout << "Select left or right table (l/r): ";
-        char l_r;
-        ::std::cin >> l_r;
-        print_hash_table(table,l_r);
-        break;
-    case 2:
-        print_unspliced(table);
-        break;
-    case 3:
-        build_unspliced_chains(table);
-        print_unspliced_chains(table);
-        break;
-    case 4:
-        ::std::cout << "Insert overlap: ";
-        int overlap;
-        ::std::cin >> overlap;
-        build_unspliced_chains(table,overlap);
-        print_unspliced_chains(table,overlap);
-        break;
-    case 5:
-        build_unspliced_chains(table);
-        merge_unspliced_chains(table);
-        break;
-    default:
-        ::std::cout << "Wrong Option..." << ::std::endl;
-    }//End_Switch
-}//End_Main
