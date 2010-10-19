@@ -39,13 +39,13 @@ class RNA_seq{
     void set_RNA_seq_clone_end(int);
     
     //Get Mehtods
-    String<Dna5> get_RNA_seq_sequence();
-    string get_RNA_seq_source();
-    string get_RNA_seq_gene_id();
-    int get_RNA_seq_gene_strand();
-    int get_RNA_seq_transcript_id();
-    long get_RNA_seq_offset();
-    int get_RNA_seq_clone_end();
+    String<Dna5> get_RNA_seq_sequence() const;
+    string get_RNA_seq_source() const;
+    string get_RNA_seq_gene_id() const;
+    int get_RNA_seq_gene_strand() const;
+    int get_RNA_seq_transcript_id() const;
+    long get_RNA_seq_offset() const;
+    int get_RNA_seq_clone_end() const;
 };
 
 #endif

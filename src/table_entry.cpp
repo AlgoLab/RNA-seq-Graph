@@ -55,15 +55,25 @@ table_entry::table_entry(String<Dna5> seq, string source, string gene_id,
     this->frequency = 1;
 }
 
+//Distructor
 table_entry::~table_entry(){
-    if (short_read != NULL)
+    if (short_read != NULL){
         delete short_read;
+    }
+    //if(next != NULL){
+    //    delete next;
+    //}
 }
 
+//Copy Constructor
+//in which the pointers next and prev are
+//setted at NULL
 table_entry::table_entry(const table_entry& rhs){
     short_read = new RNA_seq(*(rhs.short_read));
-    prev = rhs.prev;
-    next = rhs.next;
+    prev = NULL;
+    next = NULL;
+    //prev = rhs.prev;
+    //next = rhs.next;
     left_fingerprint = rhs.left_fingerprint;
     right_fingerprint = rhs.right_fingerprint;
     junction_offset = rhs.junction_offset;
@@ -72,11 +82,13 @@ table_entry::table_entry(const table_entry& rhs){
     frequency = rhs.frequency;
 }
 
+//Overloading =
 table_entry& table_entry::operator=(const table_entry& rhs){
     if(&rhs == this)
         return *this;
-    if (short_read != NULL)
+    if (short_read != NULL){
         delete short_read;
+    }
     short_read = new RNA_seq(*(rhs.short_read));
     prev = rhs.prev;
     next = rhs.next;
@@ -119,38 +131,38 @@ void table_entry::set_chain_prev(table_entry* chain_prev){
 }
 
 //Get Methods
-RNA_seq* table_entry::get_short_read(){
+RNA_seq* table_entry::get_short_read() const{
     return short_read;
 }
 
-table_entry* table_entry::get_next(){
+table_entry* table_entry::get_next() const{
     return next;
 }
 
-table_entry* table_entry::get_prev(){
+table_entry* table_entry::get_prev() const{
     return prev;
 }
 
-unsigned long long table_entry::get_left_fingerprint(){
+unsigned long long table_entry::get_left_fingerprint() const{
     return left_fingerprint;
 }
 
-unsigned long long table_entry::get_right_fingerprint(){
+unsigned long long table_entry::get_right_fingerprint() const{
     return right_fingerprint;
 }
-int table_entry::get_junction_offset(){
+int table_entry::get_junction_offset() const{
     return junction_offset;
 }
 
-table_entry* table_entry::get_chain_next(){
+table_entry* table_entry::get_chain_next() const{
     return chain_next;
 }
 
-table_entry* table_entry::get_chain_prev(){
+table_entry* table_entry::get_chain_prev() const{
     return chain_prev;
 }
 
-long table_entry::get_frequency(){
+long table_entry::get_frequency() const{
     return frequency;
 }
 

@@ -1,7 +1,7 @@
-#include "RNA_seq.h"
-
 #include <string>
 #include <seqan/sequence.h>
+
+#include "RNA_seq.h"
 
 //Constructors
 RNA_seq::RNA_seq(String<Dna5> seq){
@@ -113,30 +113,30 @@ void RNA_seq::set_RNA_seq_clone_end(int){
 }
 
 //Get Mehtods
-String<Dna5> RNA_seq::get_RNA_seq_sequence(){
+String<Dna5> RNA_seq::get_RNA_seq_sequence() const{
     return sequence;
 }
 
-string RNA_seq::get_RNA_seq_source(){
+string RNA_seq::get_RNA_seq_source() const{
     return source;
 }
 
-string RNA_seq::get_RNA_seq_gene_id(){
+string RNA_seq::get_RNA_seq_gene_id() const{
     return gene_id;
 }
 
-int RNA_seq::get_RNA_seq_gene_strand(){
+int RNA_seq::get_RNA_seq_gene_strand() const{
     return gene_strand;
 }
 
-int RNA_seq::get_RNA_seq_transcript_id(){
+int RNA_seq::get_RNA_seq_transcript_id() const{
     return transcript_id;
 }
 
-long RNA_seq::get_RNA_seq_offset(){
+long RNA_seq::get_RNA_seq_offset() const{
     return offset;
 }
 
-int RNA_seq::get_RNA_seq_clone_end(){
+int RNA_seq::get_RNA_seq_clone_end() const{
     return clone_end;
 }

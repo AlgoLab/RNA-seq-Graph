@@ -130,7 +130,7 @@ void add_entry(Map &m, table_entry* entry, char l_r){
             }while(temp != NULL && !found);
             if(found){
                 prev->increase_freq();
-					 delete entry;
+                delete entry;
             }else{
 		m[entry->get_left_fingerprint()].unspliced = 0;
                 prev->set_next(entry);
@@ -159,7 +159,7 @@ void add_entry(Map &m, table_entry* entry, char l_r){
             }while(temp != NULL && !found);
             if(found){
                 prev->increase_freq();
-					 delete entry;
+                delete entry;
             }else{
 		m[entry->get_right_fingerprint()].unspliced = 0;
                 prev->set_next(entry);
@@ -170,10 +170,8 @@ void add_entry(Map &m, table_entry* entry, char l_r){
 }//End_Method
 
 ///Read a fasta file
-tables read_fasta(char* file_name){
+void read_fasta(char* file_name, tables &t){
     //Struct with hash tables
-    tables t;
-
     string name = file_name;
     string extension = name.substr(name.find_last_of(".") + 1);
     if(extension == "fa" || extension == "fas" || extension == "fasta"){
@@ -202,6 +200,5 @@ tables read_fasta(char* file_name){
     }else{
         ::std::cout << "Not a fasta file (.fa, .fas or .fasta)" << ::std::endl;
     }//End_if
-    return t;
 }//End_Method
 

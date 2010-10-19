@@ -39,15 +39,15 @@ class table_entry{
     void set_chain_next(table_entry*);
     void set_chain_prev(table_entry*);
     //Get Methods
-    RNA_seq* get_short_read();
-    table_entry* get_next();
-    table_entry* get_prev();
-    unsigned long long get_left_fingerprint();
-    unsigned long long get_right_fingerprint();
-    int get_junction_offset();
-    table_entry* get_chain_next();
-    table_entry* get_chain_prev();
-long get_frequency();
+    RNA_seq* get_short_read() const;
+    table_entry* get_next() const;
+    table_entry* get_prev() const;
+    unsigned long long get_left_fingerprint() const;
+    unsigned long long get_right_fingerprint() const;
+    int get_junction_offset() const;
+    table_entry* get_chain_next() const;
+    table_entry* get_chain_prev() const;
+    long get_frequency() const;
     //Increase / Decrease Sequence Frequency
     void increase_freq();
     void decrease_freq();

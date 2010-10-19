@@ -8,36 +8,32 @@
 /* entry in each hash table       */
 /* (left and right)               */
 /**********************************/
-void print_spliced(tables table){
+void print_spliced(const tables &table){
     int c = 1;
-    Map::iterator it;
+    Map::const_iterator it;
     for(it=table.left_map.begin(); it != table.left_map.end(); it++){
         if(!(*it).second.unspliced){
             table_entry* t = (*it).second.p;
-            if(!table.right_map[t->get_right_fingerprint()].unspliced){
-                while(t != NULL){
-                    String<Dna5> seq = t->get_short_read()->get_RNA_seq_sequence();
-                    ::std::cout << c << " " << prefix(seq,length(seq)/2) << " " << suffix(seq,length(seq)/2) << " - " << t->get_short_read()->get_RNA_seq_transcript_id() << " " << t->get_short_read()->get_RNA_seq_offset() << ::std::endl;
-                    c++;
-                    ::std::cout << ::std::endl;
-                    t = t->get_next();
-                }//End_While
-            }//End_If
+            while(t != NULL){
+                String<Dna5> seq = t->get_short_read()->get_RNA_seq_sequence();
+                ::std::cout << c << " " << prefix(seq,length(seq)/2) << " " << suffix(seq,length(seq)/2) << " - " << t->get_short_read()->get_RNA_seq_transcript_id() << " " << t->get_short_read()->get_RNA_seq_offset() << ::std::endl;
+                c++;
+                t = t->get_next();
+            }//End_While
+            ::std::cout << ::std::endl;
         }//End_If
     }//End_For
 
     for(it=table.right_map.begin(); it != table.right_map.end(); it++){
         if(!(*it).second.unspliced){
             table_entry* t = (*it).second.p;
-            if(!table.left_map[t->get_left_fingerprint()].unspliced){
-                while(t != NULL){
-                    String<Dna5> seq = t->get_short_read()->get_RNA_seq_sequence();
-                    ::std::cout << c << " " << prefix(seq,length(seq)/2) << " " << suffix(seq,length(seq)/2) << " - " << t->get_short_read()->get_RNA_seq_transcript_id() << " " << t->get_short_read()->get_RNA_seq_offset() << ::std::endl;
-                    c++;
-                    ::std::cout << ::std::endl;
-                    t = t->get_next();
-                }//End_While
-            }//End_If
+            while(t != NULL){
+                String<Dna5> seq = t->get_short_read()->get_RNA_seq_sequence();
+                ::std::cout << c << " " << prefix(seq,length(seq)/2) << " " << suffix(seq,length(seq)/2) << " - " << t->get_short_read()->get_RNA_seq_transcript_id() << " " << t->get_short_read()->get_RNA_seq_offset() << ::std::endl;
+                c++;
+                t = t->get_next();
+            }//End_While
+            ::std::cout << ::std::endl;
         }//End_If
     }//End_For
 }//End_Method
@@ -48,13 +44,13 @@ void print_spliced(tables table){
 /* entry in each hash table     */
 /* (left and right)             */
 /********************************/
-void print_unspliced(tables table){
+void print_unspliced(const tables &table){
     int c = 1;
-    Map::iterator it;
+    Map::const_iterator it;
     for(it=table.left_map.begin(); it != table.left_map.end(); it++){
         if((*it).second.unspliced){
             table_entry* t = (*it).second.p;
-            if(table.right_map[t->get_right_fingerprint()].unspliced){
+            if(table.right_map.find(t->get_right_fingerprint())->second.unspliced){
                 String<Dna5> seq = t->get_short_read()->get_RNA_seq_sequence();
                 ::std::cout << c << " " << prefix(seq,length(seq)/2) << " " << suffix(seq,length(seq)/2)  << ::std::endl;
                 c++;
@@ -67,16 +63,17 @@ void print_unspliced(tables table){
 /*******************************/
 /* Print left or right table   */
 /*******************************/
-void print_hash_table(tables table,char l_r){
+void print_hash_table(const tables &table, char l_r){
     if(l_r == 'l'){
         int c = 1;
         long sum = 0;
-        Map::iterator it;
+        Map::const_iterator it;
         for(it=table.left_map.begin(); it != table.left_map.end(); it++){
             table_entry* t = (*it).second.p;
             while(t != NULL){
                 String<Dna5> seq = t->get_short_read()->get_RNA_seq_sequence();
-                ::std::cout << c << " " << prefix(seq,length(seq)/2) << " " << suffix(seq,length(seq)/2) << " " << t->get_frequency() << ::std::endl;
+                ::std::cout << c << " " << prefix(seq,length(seq)/2) << " " << suffix(seq,length(seq)/2) << ::std::endl;
+                      //<< " " << t->get_frequency() << ::std::endl;
                 sum += t->get_frequency();
                 t = t->get_next();
                 c++;
@@ -88,12 +85,13 @@ void print_hash_table(tables table,char l_r){
     }else{
         int c = 1;
         long sum = 0;
-        Map::iterator it;
+        Map::const_iterator it;
         for(it=table.right_map.begin(); it != table.right_map.end(); it++){
             table_entry* t = (*it).second.p;
             while(t != NULL){
                 String<Dna5> seq = t->get_short_read()->get_RNA_seq_sequence();
-                ::std::cout << c << " " << prefix(seq,length(seq)/2) << " " << suffix(seq,length(seq)/2) << " " << t->get_frequency() << ::std::endl;
+                ::std::cout << c << " " << prefix(seq,length(seq)/2) << " " << suffix(seq,length(seq)/2) << ::std::endl;
+                      //<< " " << t->get_frequency() << ::std::endl;
                 sum += t->get_frequency();
                 t = t->get_next();
                 c++;
@@ -109,7 +107,7 @@ void print_hash_table(tables table,char l_r){
 /* Build chains of unspliced RNA-seq */
 /* considering half sequence overlap */
 /*************************************/
-void build_unspliced_chains(tables table){
+void build_unspliced_chains(tables &table){
     Map::iterator it = table.left_map.begin();
     while(it != table.left_map.end()){
         Map::iterator it_temp = it;
@@ -140,7 +138,7 @@ void build_unspliced_chains(tables table){
 /* Build chains of unspliced RNA-seq */
 /* wit parametrized overlapping      */
 /*************************************/
-void build_unspliced_chains(tables table, int overlap){
+void build_unspliced_chains(tables &table, int overlap){
     Map::iterator it = table.left_map.begin();
     while(it != table.left_map.end()){
         Map::iterator it_temp = it;
@@ -175,13 +173,13 @@ void build_unspliced_chains(tables table, int overlap){
 /*************************************/
 /* Print chains of unspliced RNA_seq */
 /*************************************/
-void print_unspliced_chains(tables table){
+void print_unspliced_chains(const tables &table){
     int c = 1;
-    Map::iterator it;
+    Map::const_iterator it;
     for(it=table.left_map.begin(); it != table.left_map.end(); it++){
         table_entry* t = (*it).second.p;
         if((*it).second.unspliced  && 
-           table.right_map[(*it).second.p->get_right_fingerprint()].unspliced && 
+           table.right_map.find((*it).second.p->get_right_fingerprint())->second.unspliced && 
            t->get_chain_prev() == NULL){
             String<Dna5> seq = t->get_short_read()->get_RNA_seq_sequence();
             ::std::cout << c << " " << prefix(seq,length(seq)/2) << suffix(seq,length(seq)/2);
@@ -200,13 +198,13 @@ void print_unspliced_chains(tables table){
 /* Print chains of unspliced RNA_seq */
 /* built with overlap                */
 /*************************************/
-void print_unspliced_chains(tables table, int overlap){
+void print_unspliced_chains(const tables &table, int overlap){
     int c = 1;
-    Map::iterator it;
+    Map::const_iterator it;
     for(it=table.left_map.begin(); it != table.left_map.end(); it++){
         table_entry* t = (*it).second.p;
         if((*it).second.unspliced &&
-           table.right_map[(*it).second.p->get_right_fingerprint()].unspliced && 
+           table.right_map.find((*it).second.p->get_right_fingerprint())->second.unspliced && 
            t->get_chain_prev() == NULL){
             String<Dna5> seq = t->get_short_read()->get_RNA_seq_sequence();
             ::std::cout << c << " " << prefix(seq,length(seq)/2) << suffix(seq,length(seq)/2);
@@ -244,10 +242,10 @@ string merge_chains(string head, int offset, string to_be_chained){
 /* Merge previous built unspliced    */
 /* chains with half sequence overlap */
 /*************************************/
-map<unsigned long long, string> merge_unspliced_chains(tables table){
+map<unsigned long long, string> merge_unspliced_chains(const tables &table){
     int c = 1;
     map<unsigned long long, string> chain_map;
-    Map::iterator it;
+    Map::const_iterator it;
     // 1 - Build a new table with the chains
     for(it=table.left_map.begin(); it != table.left_map.end(); it++){
         table_entry* t = (*it).second.p;

@@ -32,7 +32,7 @@ int main(int argc, char* argv[]){
         ::std::cout << ::std::endl;
         ::std::cout << "Usage: read_input <fasta_file> <option>" << ::std::endl;
         ::std::cout << "options:" << ::std::endl;
-        ::std::cout << "\t 1 - Print hash table (left)" << ::std::endl;
+        ::std::cout << "\t 1 - Print hash table" << ::std::endl;
         ::std::cout << "\t 2 - Print unspliced RNA-seq sequences" << ::std::endl;
         ::std::cout << "\t 3 - Print spliced RNA-seq sequences" << ::std::endl;
         ::std::cout << "\t 4 - Build chains of unspliced reads with half sequence overlap" << ::std::endl;
@@ -42,7 +42,8 @@ int main(int argc, char* argv[]){
         return 1;
     }//End_If
 
-    tables table = read_fasta(argv[1]);
+    tables table;
+    read_fasta(argv[1], table);
     map<unsigned long long, string> chains;
     switch(::std::atoi(argv[2])){
     case 1:
@@ -78,4 +79,23 @@ int main(int argc, char* argv[]){
     default:
         ::std::cout << "Wrong Option..." << ::std::endl;
     }//End_Switch
+    for(Map::iterator it = table.left_map.begin(); it != table.left_map.end(); ++it){
+        table_entry* t = it->second.p;
+        table_entry* p = t;
+        while(t != NULL){
+            p = p->get_next();
+            delete t;
+            t = p;
+        }
+    }
+    for(Map::iterator it = table.right_map.begin(); it != table.right_map.end(); ++it){
+        table_entry* t = it->second.p;
+        table_entry* p = t;
+        while(t != NULL){
+            p = p->get_next();
+            delete t;
+            t = p;
+        }
+        //delete it->second.p;
+    }
 }//End_Main
