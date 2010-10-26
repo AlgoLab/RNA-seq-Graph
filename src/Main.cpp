@@ -1,4 +1,5 @@
 #include "build_chains.h"
+#include "join_chains.h"
 
 /*
 void test(tables table){
@@ -32,12 +33,14 @@ int main(int argc, char* argv[]){
         ::std::cout << ::std::endl;
         ::std::cout << "Usage: read_input <fasta_file> <option>" << ::std::endl;
         ::std::cout << "options:" << ::std::endl;
-        ::std::cout << "\t 1 - Print hash table" << ::std::endl;
-        ::std::cout << "\t 2 - Print unspliced RNA-seq sequences" << ::std::endl;
-        ::std::cout << "\t 3 - Print spliced RNA-seq sequences" << ::std::endl;
-        ::std::cout << "\t 4 - Build chains of unspliced reads with half sequence overlap" << ::std::endl;
-        ::std::cout << "\t 5 - Build chains of unspliced reads with specific overlap" << ::std::endl;
-        ::std::cout << "\t 6 - Merge chains built of unspliced reads with half sequence overlap" << ::std::endl;
+        ::std::cout << "\t 1 - Print left hash table" << ::std::endl;
+        ::std::cout << "\t 2 - Print right hash table" << ::std::endl;
+        ::std::cout << "\t 3 - Print unspliced RNA-seq sequences" << ::std::endl;
+        ::std::cout << "\t 4 - Print spliced RNA-seq sequences" << ::std::endl;
+        ::std::cout << "\t 5 - Build chains of unspliced reads with half sequence overlap" << ::std::endl;
+        ::std::cout << "\t 6 - Build chains of unspliced reads with specific overlap" << ::std::endl;
+        ::std::cout << "\t 7 - Merge chains built of unspliced reads with half sequence overlap" << ::std::endl;
+        ::std::cout << "\t 8 - Join merged chains built of unspliced reads with half sequence overlap" << ::std::endl;
         ::std::cout << ::std::endl;
         return 1;
     }//End_If
@@ -47,38 +50,42 @@ int main(int argc, char* argv[]){
     map<unsigned long long, string> chains;
     switch(::std::atoi(argv[2])){
     case 1:
-        ::std::cout << "Select left or right table (l/r): ";
-        char l_r;
-        ::std::cin >> l_r;
-        print_hash_table(table,l_r);
+        print_hash_table(table,'l');
         break;
     case 2:
-        print_unspliced(table);
+        print_hash_table(table,'r');
         break;
     case 3:
-        print_spliced(table);
+        print_unspliced(table);
         break;
     case 4:
+        print_spliced(table);
+        break;
+    case 5:
         build_unspliced_chains(table);
         print_unspliced_chains(table);
         break;
-    case 5:
+    case 6:
         ::std::cout << "Insert overlap: ";
         int overlap;
         ::std::cin >> overlap;
         build_unspliced_chains(table,overlap);
         print_unspliced_chains(table,overlap);
         break;
-    case 6:
+    case 7:
         build_unspliced_chains(table);
         chains = merge_unspliced_chains(table);
         break;
-        /* case 7:
-        test(table);
-        break;*/
+    case 8:
+        build_unspliced_chains(table);
+        chains = merge_unspliced_chains(table);
+        link_fragment_chains(table,chains);
+        break;
     default:
         ::std::cout << "Wrong Option..." << ::std::endl;
     }//End_Switch
+
+    //Maps deallocation
     for(Map::iterator it = table.left_map.begin(); it != table.left_map.end(); ++it){
         table_entry* t = it->second.p;
         table_entry* p = t;

@@ -293,7 +293,10 @@ map<unsigned long long, string> merge_unspliced_chains(const tables &table){
     }//End_For
     for(iter=chain_map.begin(); iter != chain_map.end(); iter++){
         c++;
-        ::std::cout << c << " " << (*iter).second << " - " << (*iter).second.length() << ::std::endl << ::std::endl;
+        string str;
+        assign(str,::seqan::prefix(iter->second,32));
+        ::std::cout << c << " " << fingerprint(str) << ::std::endl;
+              ::std::cout << (*iter).second << " - " << (*iter).second.length() << ::std::endl << ::std::endl;
     }//End_For
     return chain_map;
 }//End_Method
