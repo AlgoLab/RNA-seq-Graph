@@ -5,7 +5,6 @@ OBJ_DIR:=obj
 BIN_DIR:=bin
 
 CFLAGS+= -g -Wall
-CFLAGS+= -I ./seqan
 CXXFLAGS+= ${CFLAGS}
 LIBS =
 
