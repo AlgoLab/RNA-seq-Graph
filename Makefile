@@ -23,6 +23,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp Makefile
 read_input_OBJS= \
 	${OBJ_DIR}/Main.o \
 	${OBJ_DIR}/build_chains.o \
+	${OBJ_DIR}/join_chains.o \
 	${OBJ_DIR}/read_fasta.o \
 	${OBJ_DIR}/table_entry.o \
 	${OBJ_DIR}/RNA_seq.o \
