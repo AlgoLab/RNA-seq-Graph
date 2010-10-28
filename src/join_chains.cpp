@@ -26,7 +26,7 @@ void print_graph(::std::vector<delta_link> links, const map<unsigned long long, 
             //::std::cout << links[i].D_delta[j] << ::std::endl;
             for(unsigned int k=0; k<links[i].A_delta.size(); ++k){
                 //::std::cout << links[i].A_delta[k] << ::std::endl;
-                graph[ graph_nodes[links[i].A_delta[k]]-1 ][ graph_nodes[links[i].D_delta[j]]-1 ] = 1;
+                //graph[ graph_nodes[links[i].A_delta[k]]-1 ][ graph_nodes[links[i].D_delta[j]]-1 ] = 1;
                 graph[ graph_nodes[links[i].D_delta[j]]-1 ][ graph_nodes[links[i].A_delta[k]]-1 ] = 1;
             }//End_For
         }//End_For
