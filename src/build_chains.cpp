@@ -385,4 +385,16 @@ map<unsigned long long, string> merge_unspliced_chains(const tables &table){
     return chain_map;
 }//End_Method
 
+/**************************/
+/* Print chains after the */
+/* merging phase          */ 
+/**************************/
+void print_merged_chains(::std::map<unsigned long long, string> & chains){
+    int c = 0;
+    ::std::map<unsigned long long, string>::iterator ch_it;
+    for(ch_it = chains.begin(); ch_it != chains.end(); ++ch_it){
+        c++;
+        ::std::cout << c << " " << ch_it->second << ::std::endl << ::std::endl;
+    }
+}
 

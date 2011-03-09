@@ -52,6 +52,7 @@ int main(int argc, char* argv[]){
         case 8:
             build_unspliced_chains(table);
             chains = merge_unspliced_chains(table);
+            print_merged_chains(chains);
             break;
         case 9:
             build_unspliced_chains(table);
