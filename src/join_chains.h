@@ -1,3 +1,4 @@
+#include <queue>
 #include "read_fasta.h"
 
 struct links_pair{
@@ -24,9 +25,13 @@ void link_fragment_chains(tables&, ::std::map<unsigned long long, string>);
 void print_graph(::std::vector<table_entry*>, ::std::map<unsigned long long, string>, 
                  ::std::map<unsigned long long, unsigned long long>);
 
-int overlappedStringLength(string, string);
+unsigned int overlappedStringLength(string, string);
 int* computeBackTrackTable(string);
-void small_blocks(::std::vector<table_entry*> &, map<unsigned long long, string> &, int);
+void small_blocks(::std::vector<table_entry*> &, map<unsigned long long, string> &, unsigned int);
+void tiny_blocks(::std::vector<table_entry*> &, map<unsigned long long, string> &, int);
 
 void linking_refinement(::std::vector<table_entry*> &, map<unsigned long long, string> &, unsigned int, 
                         ::std::map<unsigned long long, unsigned long long>&);
+
+void check_cutted_frags(CharString, ::std::vector<table_entry*> &, 
+                        map<unsigned long long, string> &, unsigned int);

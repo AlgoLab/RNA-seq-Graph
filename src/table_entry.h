@@ -21,12 +21,11 @@ class table_entry{
     table_entry* chain_prev;
     //Sequence frequency
     long frequency;
-    
+
+    public:
     //Chains Linked
     vector<unsigned long long> D_delta;
     vector<unsigned long long> A_delta;
-
-    public:
     //Constructors
     table_entry(String<Dna5>, unsigned long long, unsigned long long);
     table_entry(String<Dna5>, string, string, unsigned long long, unsigned long long);
