@@ -51,7 +51,9 @@ unsigned long long fingerprint(string s){
     return number;
 }//End_Method
 
-////Parse Fasta Information
+/*********************************************/
+/* Parse Fasta Information                   */
+/*********************************************/
 table_entry* parse_fasta(String<Dna5> seq, string meta){
     table_entry* el = NULL;
     string left_seq;
@@ -107,70 +109,64 @@ table_entry* parse_fasta(String<Dna5> seq, string meta){
     return el;
 }//End_Method
 
-///Add entries in the "Hash Table"
-void add_entry(Map &m, table_entry* entry, char l_r){
-    if(l_r == 'l'){
-        Map::iterator it;
-        it = m.find(entry->get_left_fingerprint());
-        if(it == m.end()){
-            element_table el;
-            el.unspliced = 1;
-            el.p = entry;
-            m[entry->get_left_fingerprint()] = el;
-        }else{
-            table_entry* temp = m[entry->get_left_fingerprint()].p;
-            table_entry* prev;
-            bool found = 0;
-            do{
-                if(temp->get_right_fingerprint() == entry->get_right_fingerprint()){
-                    found = 1;
-                }
-                prev = temp;
-                temp = temp->get_next();
-            }while(temp != NULL && !found);
-            if(found){
-                prev->increase_freq();
-                delete entry;
-            }else{
-		m[entry->get_left_fingerprint()].unspliced = 0;
-                prev->set_next(entry);
-                entry->set_prev(prev);
-            }//End_If
-        }//End_If
+/***************************************/
+/* Add entries in the "Hash Table"     */
+/***************************************/
+void add_entry(tables &t, table_entry* entry){
+    hash_map::iterator it;
+    it = t.left_map.find(entry->get_left_fingerprint());
+    if(it == t.left_map.end()){
+        element_table el;
+        el.unspliced = 1;
+        el.half_spliced = 0;
+        el.p = entry;
+        t.left_map[entry->get_left_fingerprint()] = el;
     }else{
-        Map::iterator it;
-        it = m.find(entry->get_right_fingerprint());
-        if(it == m.end()){
-            element_table el;
-            el.unspliced = 1;
-            el.p = entry;
-            m[entry->get_right_fingerprint()] = el;
+        table_entry* temp = t.left_map[entry->get_left_fingerprint()].p;
+        table_entry* prev;
+        bool found = 0;
+        do{
+            if(temp->get_right_fingerprint() == entry->get_right_fingerprint()){
+                found = 1;
+            }
+            prev = temp;
+            temp = temp->get_l_next();
+        }while(temp != NULL && !found);
+        if(found){
+            prev->increase_freq();
+            delete entry;
+            return;
         }else{
-            table_entry* temp = m[entry->get_right_fingerprint()].p;
-            table_entry* prev;
-            bool found = 0;
-            do{
-                if(temp->get_left_fingerprint() == entry->get_left_fingerprint()){
-                    found = 1;
-                    //break;
-                }
-                prev = temp;
-                temp = temp->get_next();
-            }while(temp != NULL && !found);
-            if(found){
-                prev->increase_freq();
-                delete entry;
-            }else{
-		m[entry->get_right_fingerprint()].unspliced = 0;
-                prev->set_next(entry);
-                entry->set_prev(prev);
-            }//End_If
-        }//End_I
+            t.left_map[entry->get_left_fingerprint()].unspliced = 0;
+            prev->set_l_next(entry);
+            entry->set_l_prev(prev);
+        }//End_If
+    }//End_If
+    
+    it = t.right_map.find(entry->get_right_fingerprint());
+    if(it == t.right_map.end()){
+        element_table el;
+        el.unspliced = 1;
+        el.half_spliced = 0;
+        el.p = entry;
+        t.right_map[entry->get_right_fingerprint()] = el;
+    }else{
+        table_entry* temp = t.right_map[entry->get_right_fingerprint()].p;
+        table_entry* prev;
+        do{
+            prev = temp;
+            temp = temp->get_r_next();
+        }while(temp != NULL);
+        t.right_map[entry->get_right_fingerprint()].unspliced = 0;
+        prev->set_r_next(entry);
+        entry->set_r_prev(prev);
     }//End_If
 }//End_Method
 
-///Read a fasta file
-void read_fasta(char* file_name, tables &t){
+/******************************/
+/* Read a fasta file          */
+/******************************/
+int read_fasta(char* file_name, tables &t){
     //Struct with hash tables
     string name = file_name;
     string extension = name.substr(name.find_last_of(".") + 1);
@@ -188,17 +184,18 @@ void read_fasta(char* file_name, tables &t){
                 read(fstrm, fasta_seq, Fasta());
 
                 table_entry* tab = parse_fasta(fasta_seq,toCString(fasta_tag));
-                table_entry* r_tab = new table_entry(*tab);
-                add_entry(t.left_map, tab, 'l');
-                add_entry(t.right_map, r_tab, 'r');
+                add_entry(t, tab);
                 //::std::cout << tab->get_short_read()->get_RNA_seq_sequence() << ::std::endl;
             }//End_while
             fstrm.close();
         }else{
             ::std::cout << "Unable to open file " << file_name << ::std::endl;
+            return 1;
         }//End_if
     }else{
         ::std::cout << "Not a fasta file (.fa, .fas or .fasta)" << ::std::endl;
+        return 2;
     }//End_if
+    return 0;
 }//End_Method
 

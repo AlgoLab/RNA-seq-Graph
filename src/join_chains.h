@@ -1,16 +1,28 @@
 #include "read_fasta.h"
 
-struct delta_link{
-    String<Dna5> seq;
-    unsigned long long l_fingerprint;
-    unsigned long long r_fingerprint;
-    vector<unsigned long long> D_delta;
-    vector<unsigned long long> A_delta;
+struct links_pair{
+    unsigned long long D_chain;
+    unsigned long long A_chain;
 };
 
-void get_left_linked_read(string, ::std::vector<delta_link> &, int);
-void get_right_linked_read(string, ::std::vector<delta_link> &, int);
+struct small_frag{
+    links_pair frag_links;
+    CharString frag;
+    ::std::vector<links_pair> other_links;
+};
 
-::std::vector<delta_link> link_fragment_chains(const tables&, ::std::map<unsigned long long, string>);
+int get_left_linked_read(string, tables&, int);
+int get_right_linked_read(string, tables&, int);
 
-void print_graph(::std::vector<delta_link>);
+void add_linking_reads(::std::vector<table_entry*> &, const map<unsigned long long, string>, int);
+
+void chain_back_merging(map<unsigned long long, string>&, int);
+void chains_unify(map<unsigned long long, string>&);
+
+void link_fragment_chains(tables&, ::std::map<unsigned long long, string>);
+
+void print_graph(::std::vector<table_entry*>, ::std::map<unsigned long long, string>);
+
+int overlappedStringLength(string, string);
+int* computeBackTrackTable(string);
+void small_blocks(::std::vector<table_entry*> &, map<unsigned long long, string> &, int);

@@ -5,6 +5,7 @@
 
 //RNA-seqs Print Functions
 void print_spliced(const tables&);
+void print_half_spliced(const tables&);
 void print_unspliced(const tables&);
 void print_hash_table(const tables&, char);
 

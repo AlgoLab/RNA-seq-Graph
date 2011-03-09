@@ -4,8 +4,12 @@
 table_entry::table_entry(String<Dna5> seq,
                          unsigned long long left_f, unsigned long long right_f){
     short_read = new RNA_seq(seq);
-    this->next = NULL;
-    this->prev = NULL;
+
+    this->l_next = NULL;
+    this->l_prev = NULL;
+    this->r_next = NULL;
+    this->r_prev = NULL;
+
     this->left_fingerprint = left_f;
     this->right_fingerprint = right_f;
     this->junction_offset = 0;
@@ -17,8 +21,12 @@ table_entry::table_entry(String<Dna5> seq,
 table_entry::table_entry(String<Dna5> seq, string source, string gene_id, 
                          unsigned long long left_f, unsigned long long right_f){
     short_read = new RNA_seq(seq, source, gene_id);
-    this->next = NULL;
-    this->prev = NULL;
+ 
+    this->l_next = NULL;
+    this->l_prev = NULL;
+    this->r_next = NULL;
+    this->r_prev = NULL;
+
     this->left_fingerprint = left_f;
     this->right_fingerprint = right_f;
     this->junction_offset = 0;
@@ -31,8 +39,12 @@ table_entry::table_entry(String<Dna5> seq, string source, string gene_id,
                          int gene_strand,
                          unsigned long long left_f, unsigned long long right_f){
     short_read = new RNA_seq(seq, source, gene_id, gene_strand);
-    this->next = NULL;
-    this->prev = NULL;
+ 
+    this->l_next = NULL;
+    this->l_prev = NULL;
+    this->r_next = NULL;
+    this->r_prev = NULL;
+
     this->left_fingerprint = left_f;
     this->right_fingerprint = right_f;
     this->junction_offset = 0;
@@ -45,8 +57,12 @@ table_entry::table_entry(String<Dna5> seq, string source, string gene_id,
                          int gene_strand, int transcript_id, long offset, int clone_end,
                          unsigned long long left_f, unsigned long long right_f){
     short_read = new RNA_seq(seq, source, gene_id, gene_strand, transcript_id, offset, clone_end);
-    this->next = NULL;
-    this->prev = NULL;
+
+    this->l_next = NULL;
+    this->l_prev = NULL;
+    this->r_next = NULL;
+    this->r_prev = NULL;
+
     this->left_fingerprint = left_f;
     this->right_fingerprint = right_f;
     this->junction_offset = 0;
@@ -70,10 +86,12 @@ table_entry::~table_entry(){
 //setted at NULL
 table_entry::table_entry(const table_entry& rhs){
     short_read = new RNA_seq(*(rhs.short_read));
-    prev = NULL;
-    next = NULL;
-    //prev = rhs.prev;
-    //next = rhs.next;
+
+    l_next = rhs.l_next;
+    l_prev = rhs.l_prev;
+    r_next = rhs.r_next;
+    r_prev = rhs.r_prev;
+
     left_fingerprint = rhs.left_fingerprint;
     right_fingerprint = rhs.right_fingerprint;
     junction_offset = rhs.junction_offset;
@@ -90,8 +108,12 @@ table_entry& table_entry::operator=(const table_entry& rhs){
         delete short_read;
     }
     short_read = new RNA_seq(*(rhs.short_read));
-    prev = rhs.prev;
-    next = rhs.next;
+
+    l_next = rhs.l_next;
+    l_prev = rhs.l_prev;
+    r_next = rhs.r_next;
+    r_prev = rhs.r_prev;
+
     left_fingerprint = rhs.left_fingerprint;
     right_fingerprint = rhs.right_fingerprint;
     junction_offset = rhs.junction_offset;
@@ -102,12 +124,20 @@ table_entry& table_entry::operator=(const table_entry& rhs){
 }
 
 //Set Methods
-void table_entry::set_next(table_entry* next){
-    this->next = next;
+void table_entry::set_l_next(table_entry* next){
+    this->l_next = next;
 }
 
-void table_entry::set_prev(table_entry* prev){
-    this->prev = prev;
+void table_entry::set_l_prev(table_entry* prev){
+    this->l_prev = prev;
+}
+
+void table_entry::set_r_next(table_entry* next){
+    this->r_next = next;
+}
+
+void table_entry::set_r_prev(table_entry* prev){
+    this->r_prev = prev;
 }
 
 void table_entry::set_left_fingerprint(unsigned long long left_f){
@@ -135,12 +165,20 @@ RNA_seq* table_entry::get_short_read() const{
     return short_read;
 }
 
-table_entry* table_entry::get_next() const{
-    return next;
+table_entry* table_entry::get_l_next() const{
+    return l_next;
 }
 
-table_entry* table_entry::get_prev() const{
-    return prev;
+table_entry* table_entry::get_l_prev() const{
+    return l_prev;
+}
+
+table_entry* table_entry::get_r_next() const{
+    return r_next;
+}
+
+table_entry* table_entry::get_r_prev() const{
+    return r_prev;
 }
 
 unsigned long long table_entry::get_left_fingerprint() const{
@@ -174,5 +212,30 @@ void table_entry::increase_freq(){
 
 void table_entry::decrease_freq(){
     this->frequency--;
+}
+
+//Linking Chains Methods
+void table_entry::push_A_link(unsigned long long el){
+    A_delta.push_back(el);
+}
+
+int table_entry::size_A_link()const{
+    return A_delta.size();
+}
+
+unsigned long long table_entry::at_A_link(int pos)const{
+    return A_delta[pos];
+}
+
+void table_entry::push_D_link(unsigned long long el){
+    D_delta.push_back(el);
+}
+
+int table_entry::size_D_link()const{
+    return D_delta.size();
+}
+
+unsigned long long table_entry::at_D_link(int pos)const{
+    return D_delta[pos];
 }
 

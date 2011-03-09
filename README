@@ -1,9 +1,0 @@
-=== README ===
-
-CHAIN BUILDING PROCEDURE
-To build chains from the hash table we adopt the following procedure:
-1) We scan the table and for each UNSPLICED entry we look for the entry (in the same table)
-   that has as key the right_fingerprint of the first entry.
-   This means that the two entry are overlapped for an half.
-   At this point we start from this new entry and we look for the one that has, as left_fingerprint
-   the right_fingerprint of this entry. W eiterate this process until we reach the end of the table.

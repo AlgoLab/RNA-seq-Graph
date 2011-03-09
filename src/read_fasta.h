@@ -15,15 +15,16 @@ using namespace seqan;
 struct element_table{
     table_entry* p;
     bool unspliced;
+    bool half_spliced;
 };
 
-typedef std::map<unsigned long long, element_table> Map;
+typedef ::std::map<unsigned long long, element_table> hash_map;
 
 
 //Hash tables
 struct tables{
-    Map left_map;
-    Map right_map;
+    hash_map left_map;
+    hash_map right_map;
 };
 
 //Convert DNA sequence into binary
@@ -36,9 +37,9 @@ unsigned long long fingerprint(string);
 table_entry* parse_fasta(String<Dna5>, string);
 
 //Add entries in the Hash Table
-void add_entry(Map &, table_entry*, char);
+void add_entry(hash_map &, table_entry*, char);
 
 //Read Fasta File
-void read_fasta(char*, tables&);
+int read_fasta(char*, tables&);
 
 #endif
