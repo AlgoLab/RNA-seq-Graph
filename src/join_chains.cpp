@@ -10,7 +10,8 @@
 /******************************/
 /* Build and print the graph  */
 /******************************/
-void print_graph(::std::vector<table_entry*> links, const map<unsigned long long, string> chains){
+void print_graph(::std::vector<table_entry*> links, const map<unsigned long long, string> chains,
+                 map<unsigned long long, unsigned long long> mapping){
     map<unsigned long long, string>::const_iterator ch_iter;
     map<unsigned long long, int> graph_nodes;
     ofstream out_file;
@@ -49,23 +50,23 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
             //::std::cout << "j " << j << ::std::endl;
             //::std::cout << links[i].D_delta[j] << ::std::endl;
             for(int k=0; k<links[i]->size_A_link(); ++k){
-                if(graph_nodes.find(links[i]->at_D_link(j)) != graph_nodes.end() &&
-                   graph_nodes.find(links[i]->at_A_link(k)) != graph_nodes.end()){
-                    if(graph_nodes[links[i]->at_D_link(j)] != graph_nodes[links[i]->at_A_link(k)] && 
-                       graph[graph_nodes[links[i]->at_D_link(j)]-1][graph_nodes[links[i]->at_A_link(k)]-1] == 0){
+                if(graph_nodes.find(mapping[links[i]->at_D_link(j)]) != graph_nodes.end() &&
+                   graph_nodes.find(mapping[links[i]->at_A_link(k)]) != graph_nodes.end()){
+                    if(graph_nodes[mapping[links[i]->at_D_link(j)]] != graph_nodes[mapping[links[i]->at_A_link(k)]] && 
+                       graph[graph_nodes[mapping[links[i]->at_D_link(j)]]-1][graph_nodes[mapping[links[i]->at_A_link(k)]]-1] == 0){
                         //::std::cout << "k " << k << ::std::endl;
                         //::std::cout << links[i].A_delta[k] << ::std::endl;
-                        graph[graph_nodes[links[i]->at_D_link(j)]-1][graph_nodes[links[i]->at_A_link(k)]-1] = 1;
+                        graph[graph_nodes[mapping[links[i]->at_D_link(j)]]-1][graph_nodes[mapping[links[i]->at_A_link(k)]]-1] = 1;
                         //GDL output
                         ::std::cout << "\t edge: {" << ::std::endl;
-                        ::std::cout << "\t\t source: \"" << graph_nodes[links[i]->at_D_link(j)] << "\"" << ::std::endl;
-                        ::std::cout << "\t\t target: \"" << graph_nodes[links[i]->at_A_link(k)] << "\"" << ::std::endl;
+                        ::std::cout << "\t\t source: \"" << graph_nodes[mapping[links[i]->at_D_link(j)]] << "\"" << ::std::endl;
+                        ::std::cout << "\t\t target: \"" << graph_nodes[mapping[links[i]->at_A_link(k)]] << "\"" << ::std::endl;
                         ::std::cout << "\t}" << ::std::endl;
                         //File output
                         num_edges++;
                         out_file << "edge#" << num_edges << " ";
-                        out_file << graph_nodes[links[i]->at_D_link(j)] << ";";
-                        out_file << graph_nodes[links[i]->at_A_link(k)] << "\n";
+                        out_file << graph_nodes[mapping[links[i]->at_D_link(j)]] << ";";
+                        out_file << graph_nodes[mapping[links[i]->at_A_link(k)]] << "\n";
                     }
                 }
             }//End_For
@@ -75,7 +76,8 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
     out_file.close();
 }//End_Method
 
-void add_linking_reads(::std::vector<table_entry*> & links, const map<unsigned long long, string> chains, int min_overlap){
+void add_linking_reads(::std::vector<table_entry*> & links, const map<unsigned long long, string> chains, 
+                       unsigned int min_overlap){
     map<unsigned long long, string>::const_iterator ch_iter;
     map<unsigned long long, int> graph_nodes;
     //int c = 0;
@@ -92,13 +94,15 @@ void add_linking_reads(::std::vector<table_entry*> & links, const map<unsigned l
                                              ::seqan::length(links[i]->get_short_read()->get_RNA_seq_sequence())-min_overlap));
             //::std::cout << read_tail << ::std::endl;
             for(ch_iter = chains.begin(); ch_iter != chains.end(); ++ch_iter){
-                int q = 0;
+                unsigned int q = 0;
                 while(q < min_overlap*2){
-                    string chain_head;
-                    assign(chain_head,::seqan::infix(ch_iter->second,q,q+min_overlap));
-                    if(read_tail == chain_head){
-                        links[i]->push_A_link(ch_iter->first);
-                        //::std::cout << "Aggiunto A " << graph_nodes[ch_iter->first] << ::std::endl;
+                    if(ch_iter->second.length() > min_overlap*2){
+                        string chain_head;
+                        assign(chain_head,::seqan::infix(ch_iter->second,q,q+min_overlap));
+                        if(read_tail == chain_head){
+                            links[i]->push_A_link(ch_iter->first);
+                            //::std::cout << "Aggiunto A " << graph_nodes[ch_iter->first] << ::std::endl;
+                        }
                     }
                     ++q;
                 }
@@ -119,14 +123,16 @@ void add_linking_reads(::std::vector<table_entry*> & links, const map<unsigned l
             assign(read_head,::seqan::prefix(links[i]->get_short_read()->get_RNA_seq_sequence(),min_overlap));
             //::std::cout << read_head << ::std::endl;
             for(ch_iter = chains.begin(); ch_iter != chains.end(); ++ch_iter){
-                int q = 0;
+                unsigned int q = 0;
                 while(q < min_overlap*2){
-                    string chain_tail;
-                    assign(chain_tail,::seqan::infix(ch_iter->second,ch_iter->second.length()-q-min_overlap,
-                                                     ch_iter->second.length()-q));
-                    if(read_head == chain_tail){
-                        links[i]->push_D_link(ch_iter->first);
-                        //::std::cout << "Aggiunto D" << ::std::endl;
+                    if(ch_iter->second.length() > min_overlap*2){
+                        string chain_tail;
+                        assign(chain_tail,::seqan::infix(ch_iter->second,ch_iter->second.length()-q-min_overlap,
+                                                         ch_iter->second.length()-q));
+                        if(read_head == chain_tail){
+                            links[i]->push_D_link(ch_iter->first);
+                            //::std::cout << "Aggiunto D" << ::std::endl;
+                        }
                     }
                     ++q;
                 }
@@ -269,12 +275,14 @@ int get_right_linked_read(string chain, tables& table, int delta){
 /*************************************/
 /* Merge chains looking from the end */
 /*************************************/
-void chain_back_merging(map<unsigned long long, string>& chains, int len){
-    multimap<unsigned long long, unsigned long long> new_chains;
-    map<unsigned long long, string>::iterator chain_it;
+::std::map<unsigned long long, unsigned long long> chain_back_merging(map<unsigned long long, string>& chains, int len){
+    ::std::map<unsigned long long, unsigned long long> mapping;
+    ::std::multimap<unsigned long long, unsigned long long> new_chains;
+    ::std::map<unsigned long long, string>::iterator chain_it;
     //unsigned int c = 0;
     queue<unsigned long long> q;
     for(chain_it = chains.begin(); chain_it != chains.end(); ++chain_it){
+        mapping[chain_it->first] = chain_it->first;
         //c++;
         string tail;
         ::seqan::assign(tail,::seqan::suffix(chain_it->second,chain_it->second.length()-len));
@@ -296,6 +304,7 @@ void chain_back_merging(map<unsigned long long, string>& chains, int len){
                         //::std::cout << chain_it->second << ::std::endl;
                         q.push(chain_it->first);
                         erased = true;
+                        mapping[chain_it->first] = chains.find(it->second)->first;
                     }
                 }else{
                     long diff = chain_it->second.length() - dub.length();
@@ -305,6 +314,7 @@ void chain_back_merging(map<unsigned long long, string>& chains, int len){
                         //::std::cout << dub << ::std::endl;
                         q.push(chains.find(it->second)->first);
                         erased = true;
+                        mapping[chains.find(it->second)->first] = chain_it->first;
                     }
                 }
             }
@@ -329,23 +339,35 @@ void chain_back_merging(map<unsigned long long, string>& chains, int len){
         ::std::cout << c  << " " << tail << " " << tail.length() << ::std::endl;
     }
     */
+    return mapping;
 }
 
 /***************************************/
 /* Merge chains looking for substrings */
 /***************************************/
-void chains_unify(map<unsigned long long, string>& chains){
-    map<unsigned long long, string>::iterator chain_it;
-    map<unsigned long long, string>::iterator chain_it2;
+::std::map<unsigned long long, unsigned long long> chains_unify(map<unsigned long long, string>& chains, unsigned int len){
+    ::std::map<unsigned long long, string>::iterator chain_it;
+    ::std::map<unsigned long long, string>::iterator chain_it2;
+    ::std::map<unsigned long long, unsigned long long> mapping;
     queue<unsigned long long> q;
     for(chain_it = chains.begin(); chain_it != chains.end(); ++chain_it){
-        for(chain_it2 = chains.begin(); chain_it2 != chains.end(); ++chain_it2){
-            if(chain_it != chain_it2 && chain_it->second.length() < chain_it2->second.length()){
-                CharString text = chain_it2->second;
-                Finder<CharString> finder(text);
-                Pattern<CharString, Horspool> pattern(chain_it->second);
-                if(find(finder,pattern)){
-                    q.push(chain_it->first);
+        int max_ch_len = 0;
+        mapping[chain_it->first] = chain_it->first;
+        if(chain_it->second.length() > len){
+            CharString p = chain_it->second;
+            Pattern<CharString, ShiftOr > pattern(p);
+            for(chain_it2 = chains.begin(); chain_it2 != chains.end(); ++chain_it2){
+                if(chain_it != chain_it2 && chain_it->second.length() < chain_it2->second.length()){
+                    CharString text = chain_it2->second;
+                    Finder<CharString> finder(text);
+                    int ch_len = chain_it2->second.length();
+                    if(find(finder,pattern)){
+                        q.push(chain_it->first);
+                        if(ch_len > max_ch_len){
+                            mapping[chain_it->first] = chain_it2->first;
+                            max_ch_len = ch_len;
+                        }
+                    }
                 }
             }
         } 
@@ -354,6 +376,7 @@ void chains_unify(map<unsigned long long, string>& chains){
         chains.erase(q.front());
         q.pop();
     }
+    return mapping;
 }
 
 int overlappedStringLength(string s1, string s2) {
@@ -403,7 +426,8 @@ int* computeBackTrackTable(string s) {
 /* between l/2 and l and link  */
 /* them to existing chains     */
 /*******************************/
-void small_blocks(::std::vector<table_entry*> & links, map<unsigned long long, string> &chains, int len){
+void small_blocks(::std::vector<table_entry*> & links, map<unsigned long long, string> &chains, int len,
+                  map<unsigned long long, unsigned long long>& mapping){
     //map<unsigned long long, int> graph_nodes;
     map<unsigned long long, string>::iterator ch_iter;
     ::std::vector<small_frag> short_blocks;
@@ -466,12 +490,120 @@ void small_blocks(::std::vector<table_entry*> & links, map<unsigned long long, s
         new_chain.append(ch);
         if(chains.find(fingerprint(new_chain)) == chains.end()){
             chains[fingerprint(new_chain)] = ch;
+            mapping[fingerprint(new_chain)] = fingerprint(new_chain);
             links[short_blocks[i].frag_links.D_chain]->push_A_link(fingerprint(new_chain));
             links[short_blocks[i].frag_links.A_chain]->push_D_link(fingerprint(new_chain));
         }
         for(unsigned int j=0; j<short_blocks[i].other_links.size(); ++j){
             links[short_blocks[i].other_links[j].D_chain]->push_A_link(fingerprint(new_chain));
             links[short_blocks[i].other_links[j].A_chain]->push_D_link(fingerprint(new_chain));
+        }
+    }
+}
+
+void linking_refinement(::std::vector<table_entry*> & links, map<unsigned long long, string> & chains, unsigned int len,
+                        ::std::map<unsigned long long, unsigned long long> & mapping){
+    for(unsigned int i=0; i<links.size(); ++i){
+        ::std::queue<pair<unsigned long long, int> > q_d;
+        ::std::queue<pair<unsigned long long, int> > q_a;
+        bool d_linked = true;
+        bool a_linked = true;
+        if(links[i]->size_D_link() == 0){
+            d_linked = false;
+            CharString p = ::seqan::prefix(links[i]->get_short_read()->get_RNA_seq_sequence(),len);
+            Pattern<CharString, ShiftOr > pattern(p);
+            ::std::map<unsigned long long, string>::iterator chain_it;
+            for(chain_it = chains.begin(); chain_it != chains.end(); ++chain_it){ 
+                CharString text = chain_it->second;
+                Finder<CharString> finder(text);
+            
+                if(find(finder,pattern)){
+                    d_linked = true;
+                    q_d.push(pair<unsigned long long, int> (chain_it->first, beginPosition(finder)));
+                    //::std::cout << "D " << (i+1) << " " << beginPosition(finder) << ::std::endl;
+                }
+            }
+        }
+
+        if(links[i]->size_A_link() == 0){
+            a_linked = false;
+            CharString p = ::seqan::suffix(links[i]->get_short_read()->get_RNA_seq_sequence(),len);
+            Pattern<CharString, ShiftOr > pattern(p);
+            ::std::map<unsigned long long, string>::iterator chain_it;
+            for(chain_it = chains.begin(); chain_it != chains.end(); ++chain_it){ 
+                CharString text = chain_it->second;
+                Finder<CharString> finder(text);
+            
+                if(find(finder,pattern)){
+                    a_linked = true;
+                    q_a.push(pair<unsigned long long, int> (chain_it->first, beginPosition(finder)));
+                    //::std::cout << "A " << (i+1) << " " << beginPosition(finder) << ::std::endl;
+                }
+            }
+        }
+        
+        if(q_d.size() != 0 && a_linked){
+            //verificare il caso in cui sia alla fine della catena
+            //il che significa che è già stata spezzata da un altro 
+            //read e quindi devo solo aggiungere il link nuovo
+            while(!q_d.empty()){
+                pair<unsigned long long, int> el = q_d.front();
+                //Il nuovo link lo aggiungo in caso debba spezzare la catena...
+                //...ma anche nel caso sia già stata spezzata
+                links[i]->push_D_link(el.first);
+                if(el.second + len < chains.find(el.first)->second.length()){
+                    CharString pre = ::seqan::prefix(chains[el.first],el.second + len);
+                    string str_pre = ::seqan::toCString(pre);
+                    CharString suf = ::seqan::suffix(chains[el.first],el.second + len);
+                    string str_suf = ::seqan::toCString(suf);
+                    //Sono sicuro che sia > len dato che la estraggo da un prefisso
+                    //di lunghezza len...
+                    chains[el.first] = str_pre;
+                    
+                    //...ma il suffissopotrebbe essere piu' corto di len
+                    string head;
+                    if(str_suf.length() >= len){
+                        head = ::seqan::toCString(::seqan::prefix(suf,len));
+                        chains[fingerprint(head)] = str_suf;
+                        mapping[fingerprint(head)] = fingerprint(head);
+                    }else{
+                        head = str_suf;
+                        for(unsigned int z=0; z<len-str_suf.length();++z){
+                            head.append("A");
+                        }
+                        chains[fingerprint(head)] = head;
+                        mapping[fingerprint(head)] = fingerprint(head);
+                    }
+                    
+                    for(unsigned int z=0; z<links.size();++z){
+                        for(int k=0; k<links[z]->size_D_link();++k){
+                            if(links[z]->at_D_link(k) == el.first){
+                                links[z]->at_D_link(k) = fingerprint(head);
+                                //::std::cout << "Qui" << ::std::endl;
+                            }
+                        }
+                    }
+                    //Aggiungere un link tra le due catene create
+                    CharString l_part = chains[el.first];
+                    string new_link = ::seqan::toCString(::seqan::suffix(l_part,length(l_part) - len));
+                    unsigned long long f_l = fingerprint(new_link);
+                    new_link.append(head);
+                    table_entry* t_new = new table_entry(new_link,f_l,fingerprint(head));
+                    t_new->push_D_link(el.first);
+                    t_new->push_A_link(fingerprint(head));
+                    links.push_back(t_new);
+                    //::std::cout << new_link << " - " << new_link.length() << ::std::endl;
+                }
+                q_d.pop();
+            }
+        }
+
+        if(q_a.size() != 0 && d_linked){
+            while(!q_a.empty()){
+                pair<unsigned long long, int> el = q_a.front();
+                
+                q_a.pop();
+            }
         }
     }
 }
@@ -593,6 +725,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> chains)
     //Come prova impostiamo delta a 1/2 della lunghezza dei read
     int delta = len/2;
     string new_chain;
+
     for(chain_it = chains.begin(); chain_it != chains.end(); ++chain_it){
         //::std::cout << "Left" << ::std::endl;
         int right_cut = get_left_linked_read(chain_it->second, table, delta);
@@ -606,11 +739,13 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> chains)
         //::std::cout << left_cut << " " << new_chain << " " << right_cut << ::std::endl << ::std::endl;
         chain_it->second = new_chain;
     }//End_For
-    chains_unify(chains);
-    //chain_back_merging(chains,delta);
+    ::std::map<unsigned long long, unsigned long long> mapping = chains_unify(chains,delta);
+    //::std::map<unsigned long long, unsigned long long> mapping = chain_back_merging(chains,delta);
     add_linking_reads(linking_reads,chains,delta/2);
-    small_blocks(linking_reads,chains,delta);
-    print_graph(linking_reads,chains);
+    small_blocks(linking_reads,chains,delta,mapping);
+    //linking_refinement(linking_reads,chains,delta,mapping);
+    print_graph(linking_reads,chains, mapping);
+    
 }//End_Method
 
 

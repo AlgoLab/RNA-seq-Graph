@@ -223,7 +223,7 @@ int table_entry::size_A_link()const{
     return A_delta.size();
 }
 
-unsigned long long table_entry::at_A_link(int pos)const{
+unsigned long long & table_entry::at_A_link(int pos){
     return A_delta[pos];
 }
 
@@ -235,7 +235,7 @@ int table_entry::size_D_link()const{
     return D_delta.size();
 }
 
-unsigned long long table_entry::at_D_link(int pos)const{
+unsigned long long & table_entry::at_D_link(int pos){
     return D_delta[pos];
 }
 

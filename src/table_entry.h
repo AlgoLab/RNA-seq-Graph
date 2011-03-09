@@ -69,11 +69,12 @@ class table_entry{
     //Linking chains methods
     void push_A_link(unsigned long long);
     int size_A_link()const;
-    unsigned long long at_A_link(int)const;
+    unsigned long long & at_A_link(int);
 
     void push_D_link(unsigned long long);
     int size_D_link()const;
-    unsigned long long at_D_link(int)const;
+    unsigned long long & at_D_link(int);
+
 };
 
 #endif
