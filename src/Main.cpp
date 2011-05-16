@@ -4,7 +4,7 @@
 int main(int argc, char* argv[]){
     if(argc < 3){
         ::std::cout << ::std::endl;
-        ::std::cout << "Usage: read_input <fasta_file> <option>" << ::std::endl;
+        ::std::cout << "Usage: build_RNA_seq_graph <fasta_file> <option>" << ::std::endl;
         ::std::cout << "options:" << ::std::endl;
         ::std::cout << "\t 1 - Print left hash table" << ::std::endl;
         ::std::cout << "\t 2 - Print right hash table" << ::std::endl;

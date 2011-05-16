@@ -469,7 +469,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
     //Come prova impostiamo delta a 1/2 della lunghezza dei read
     int delta = len/2;
     string new_chain;
-
+    ::std::cerr << "Linking Chains...";
     for(chain_it = chains.begin(); chain_it != chains.end(); ++chain_it){
         //::std::cout << "Left" << ::std::endl;
         int right_cut = get_left_linked_read(chain_it->second, table, delta);
@@ -487,14 +487,34 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
         chain_it->second = new_chain;
         //::std::cout << "Fine catena" << ::std::endl;
     }//End_For
+    ::std::cerr << "done!" << ::std::endl;
     //print_merged_chains(chains);
+    ::std::cerr << "Merging Chains...";
     ::std::map<unsigned long long, unsigned long long> mapping = chains_unify(chains,delta/2);
+    ::std::cerr << "done!" << ::std::endl;
     //print_merged_chains(chains);
     //::std::map<unsigned long long, unsigned long long> mapping = chain_back_merging(chains,delta);
+    //::std::cout << "Tiny Blocks" << ::std::endl;
+    ::std::cerr << "Graph Refinement..." << ::std::endl;
+
+    ::std::cerr << "Step 1...";
     tiny_blocks(linking_reads,chains,delta,mapping);
+    ::std::cerr << "done!" << ::std::endl;
+
+    ::std::cerr << "Step 2...";
     add_linking_reads(linking_reads,chains,delta/2);
+    ::std::cerr << "done!" << ::std::endl;
+
+    ::std::cerr << "Step 3...";
+    //::std::cout << "Small Blocks" << ::std::endl;
     small_blocks(linking_reads,chains,delta,mapping);
-    check_overlapping_nodes(linking_reads,chains,delta,mapping,5);
+    ::std::cerr << "done!" << ::std::endl;
+
+    ::std::cerr << "Step 4...";
+    check_overlapping_nodes(linking_reads,chains,delta,mapping,5,95);
+    ::std::cerr << "done!" << ::std::endl;
+
+    ::std::cerr << "Graph Refinement...done!" << ::std::endl;
     //linking_refinement(linking_reads,chains,delta,mapping);
     print_graph(linking_reads,chains, mapping);
     

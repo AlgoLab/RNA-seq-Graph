@@ -28,10 +28,7 @@ struct tables{
 };
 
 //Convert DNA sequence into binary
-string binary_conversion(string);
-
-//Encode binary sequence into a number
-unsigned long long fingerprint(string);
+unsigned long long fingerprint(const string&);
 
 //Parse Fasta Information
 table_entry* parse_fasta(String<Dna5>, string);

@@ -148,6 +148,9 @@ void tiny_blocks(::std::vector<table_entry*> & links, map<unsigned long long, st
     map<unsigned long long, string>::iterator ch_iter;
     ::std::vector<small_frag> short_blocks;
     stack<unsigned int> s;
+
+    ::std::cerr << "Link size: " << links.size() << ::std::endl;
+
     for(unsigned int i=0; i<links.size(); ++i){
         for(unsigned int j=0; j<links.size(); ++j){
             if(i!=j && links[i]->size_D_link() != 0 && links[j]->size_A_link() != 0){
@@ -174,8 +177,10 @@ void tiny_blocks(::std::vector<table_entry*> & links, map<unsigned long long, st
                 }
             }
         }
+        ::std::cerr << i << " ";
     }
-    
+    ::std::cerr << "Fine Primo Ciclo" << ::std::endl;
+    ::std::cerr << "Short Blocks (initial) size: " << short_blocks.size() << ::std::endl;
     for(unsigned int i=0; i<short_blocks.size(); ++i){
         bool sub_seq = false;
         for(unsigned int k=0; k<short_blocks.size(); ++k){
@@ -208,7 +213,8 @@ void tiny_blocks(::std::vector<table_entry*> & links, map<unsigned long long, st
         short_blocks.erase(short_blocks.begin()+s.top());
         s.pop();
     }
-    
+    ::std::cerr << "Fine Secondo Ciclo" << ::std::endl;
+    ::std::cerr << "Short Blocks (final) size: " << short_blocks.size() << ::std::endl;
     for(unsigned int i=0; i<short_blocks.size(); ++i){//Start_For_1
         bool new_frag = true;
         Pattern<CharString, ShiftAnd> pattern(short_blocks[i].frag);
@@ -477,18 +483,18 @@ void linking_refinement(::std::vector<table_entry*> & links, map<unsigned long l
 /* could be a node itself       */
 /********************************/
 void check_overlapping_nodes(::std::vector<table_entry*> & links, map<unsigned long long, string> & chains, int len,
-                             ::std::map<unsigned long long, unsigned long long>& mapping, unsigned int min_overlap){
+                             ::std::map<unsigned long long, unsigned long long>& mapping, unsigned int min_overlap,
+                             int ov_perc){
     ::std::map<unsigned long long, string>::iterator chain_it;
     ::std::map<unsigned long long, string>::iterator chain_it_2;
     ::std::vector<small_frag> short_blocks;
     stack<unsigned int> s;
+    queue<unsigned long long> q;
     for(chain_it = chains.begin(); chain_it != chains.end(); ++chain_it){
         for(chain_it_2 = chains.begin(); chain_it_2 != chains.end(); ++chain_it_2){
-            if(chain_it != chain_it_2 && 
-               overlappedStringLength(chain_it->second,chain_it_2->second) < chain_it->second.length() &&
-               overlappedStringLength(chain_it->second,chain_it_2->second) < chain_it_2->second.length() &&
-               overlappedStringLength(chain_it->second,chain_it_2->second) > min_overlap){
-                unsigned int ov = overlappedStringLength(chain_it->second,chain_it_2->second);
+            unsigned int ov = overlappedStringLength(chain_it->second,chain_it_2->second);
+            if(chain_it != chain_it_2 && ov < (ov_perc*chain_it->second.length())/100 &&
+               (ov_perc*ov < chain_it_2->second.length())/100 && ov > min_overlap){
                 bool new_node = false;
                 CharString pat_text=prefix(chain_it_2->second,ov);
                 //::std::cout << chain_it->second << ::std::endl;
@@ -516,6 +522,22 @@ void check_overlapping_nodes(::std::vector<table_entry*> & links, map<unsigned l
                     f.frag_links.A_chain = chain_it_2->first;
                     f.frag = prefix(chain_it_2->second,ov);
                     short_blocks.push_back(f);
+                }
+            }else{
+                if(chain_it != chain_it_2 && ov>=(ov_perc*chain_it->second.length())/100){
+                    //::std::cout << "Chain_it sub-node of Chain_it_2" << ::std::endl;
+                    //::std::cout << "Chain_it " << chain_it->second << ::std::endl;
+                    //::std::cout << "Chain_it_2 " << chain_it_2->second << ::std::endl;
+                    //::std::cout << ov << ::std::endl;
+                    q.push(chain_it->first);
+                }else{
+                    if(chain_it != chain_it_2 && ov>=(ov_perc*chain_it_2->second.length())/100){
+                        //::std::cout << "Chain_it_2 sub-node of Chain_it" << ::std::endl;
+                        //::std::cout << "Chain_it " << chain_it->second << ::std::endl;
+                        //::std::cout << "Chain_it_2 " <<chain_it_2->second << ::std::endl;
+                        //::std::cout << ov << ::std::endl;
+                        q.push(chain_it_2->first);
+                    }
                 }
             }
         }
@@ -552,6 +574,10 @@ void check_overlapping_nodes(::std::vector<table_entry*> & links, map<unsigned l
     while(!s.empty()){
         short_blocks.erase(short_blocks.begin()+s.top());
         s.pop();
+    }
+    while(!q.empty()){
+        chains.erase(q.front());
+        q.pop();
     }
 
     for(unsigned int i=0; i<short_blocks.size(); ++i){

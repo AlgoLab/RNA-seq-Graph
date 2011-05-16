@@ -16,6 +16,6 @@ void linking_refinement(::std::vector<table_entry*> &, map<unsigned long long, s
                         ::std::map<unsigned long long, unsigned long long>&);
 
 void check_overlapping_nodes(::std::vector<table_entry*> &, map<unsigned long long, string> &, int,
-                             ::std::map<unsigned long long, unsigned long long>&, unsigned int);
+                             ::std::map<unsigned long long, unsigned long long>&, unsigned int, int);
 
 #endif

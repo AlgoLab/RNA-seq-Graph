@@ -9,6 +9,8 @@
 
 #include "read_fasta.h"
 
+#define READ_LEN 64
+
 using namespace seqan;
 using namespace std;
 
@@ -16,37 +18,25 @@ using namespace std;
 /* Convert a DNA sequnece on alphabet {A,C,G,T} */
 /* into a binary sequence                       */
 /************************************************/
-string binary_conversion(string seq){
-    string bin = "";
+unsigned long long fingerprint(const string& seq){
+    unsigned long long number = 0;
     for(unsigned int i=0; i<seq.length(); i++){
+        number = number<<2;
+        if(seq.at(i) == 'N' || seq.at(i) == 'n'){
+            number |= 0;
+        }
         if(seq.at(i) == 'A' || seq.at(i) == 'a'){
-            bin += "00";
+            number |= 0;
         }
         if(seq.at(i) == 'C' || seq.at(i) == 'c'){
-            bin += "01";
+            number |= 1;
         }
         if(seq.at(i) == 'G' || seq.at(i) == 'g'){
-            bin += "10";
+            number |= 2;
         }
         if(seq.at(i) == 'T' || seq.at(i) == 't'){
-            bin += "11";
+            number |= 3;
         }
-    }//End_For
-    return bin;
-}//End_Method
-
-/**********************************************/
-/* Encode a binary sequence (max 64 bit) into */
-/* a decimal (long long) number               */
-/**********************************************/
-unsigned long long fingerprint(string s){
-    string bin = binary_conversion(s);
-    unsigned long long number = 0;
-    for(unsigned int i=0; i<bin.length(); i++){
-        number = number<<1;
-        if(bin.at(i)=='1'){
-            number |= 1;
-        }//End_If
     }//End_For
     return number;
 }//End_Method
@@ -104,7 +94,7 @@ table_entry* parse_fasta(String<Dna5> seq, string meta){
             el = new table_entry(seq, source, gene_id, gene_strand, fingerprint(left_seq), fingerprint(right_seq));
         }//End_If
     }else{
-        ::std::cout << "Invalid fasta entry" << ::std::endl;
+        el = new table_entry(seq, "region", "id", 0, fingerprint(left_seq), fingerprint(right_seq));
     }//End_If
     return el;
 }//End_Method
@@ -171,29 +161,57 @@ int read_fasta(char* file_name, tables &t){
     string name = file_name;
     string extension = name.substr(name.find_last_of(".") + 1);
     if(extension == "fa" || extension == "fas" || extension == "fasta"){
+        unsigned long long file_dimension = 1;
+	ifstream f(file_name,ios::in|ios::binary|ios::ate);
+	if(f.is_open()){
+            file_dimension = f.tellg();
+            f.close();
+	}
+	else{
+            ::std::cerr << "Unable to open file " << file_name << ::std::endl;
+            return 1;	
+	}
+        unsigned long long read_size = 0;
+	int perc = 0;
         ::std::fstream fstrm;
         fstrm.open(file_name, ::std::ios_base::in | ::std::ios_base::binary);
         if(fstrm.is_open()){
+            ::std::cerr << "Processing RNA-seq file..." << ::std::endl;
             String<char> fasta_tag;
             String<Dna5> fasta_seq;
             int c = 0;
             while(!fstrm.eof()){
                 c++;
-                //::std::cout << c << ::std::endl;
+                //::std::cerr << c << ::std::endl;
                 readMeta(fstrm, fasta_tag, Fasta());
                 read(fstrm, fasta_seq, Fasta());
-
-                table_entry* tab = parse_fasta(fasta_seq,toCString(fasta_tag));
-                add_entry(t, tab);
-                //::std::cout << tab->get_short_read()->get_RNA_seq_sequence() << ::std::endl;
+                read_size+=(length(fasta_tag)*sizeof(char)+length(fasta_seq)*sizeof(char));
+                if ((read_size/(double)file_dimension)*100 - 1 >= perc) {
+                    perc++;
+                    if(perc%10 == 0){
+                        ::std::cerr << "Processed: " << perc << "%" << endl;
+                    }
+                }
+                //Parse RNA-seq Sequence
+                if(length(fasta_seq) >= READ_LEN){
+                    for(unsigned int i = 0;i<=length(fasta_seq)-READ_LEN;i++){
+                        table_entry* tab = parse_fasta(infix(fasta_seq,i,i+READ_LEN),toCString(fasta_tag));
+                        add_entry(t, tab);
+                    }
+                }else{
+                    ::std::cerr << "Invalid fasta entry" << ::std::endl;
+                }
+                //::std::cerr << tab->get_short_read()->get_RNA_seq_sequence() << ::std::endl;
             }//End_while
+            ::std::cerr << "Processing RNA-seq file...done!" << ::std::endl;
             fstrm.close();
+            
         }else{
-            ::std::cout << "Unable to open file " << file_name << ::std::endl;
+            ::std::cerr << "Unable to open file " << file_name << ::std::endl;
             return 1;
         }//End_if
     }else{
-        ::std::cout << "Not a fasta file (.fa, .fas or .fasta)" << ::std::endl;
+        ::std::cerr << "Not a fasta file (.fa, .fas or .fasta)" << ::std::endl;
         return 2;
     }//End_if
     return 0;
