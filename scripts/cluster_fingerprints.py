@@ -132,9 +132,9 @@ def get_strings ():
 
 
 if __name__ == '__main__':
-#    os.system('grep -v "^>" ARHGAP4_1_mismatch.fa | grep -v N')
+    os.system('grep -v "^>" ARHGAP4_1_mismatch.fa | grep -v N > raw-reads')
     generate_reads()
-    os.system("sort -u fingerprints > fingerprints.uniq")
+    os.system("sort -u fingerprints > fingerprints.clean")
     map=get_strings()
     with open('reads', 'r') as f:
         for line in f:
