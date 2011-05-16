@@ -72,7 +72,7 @@ def center_string(strings):
 
 
 def get_strings ():
-    with open('fingerprints.clean', 'r') as f:
+    with open('fingerprints.uniq', 'r') as f:
         fingerprints=[x.rstrip() for x in f.readlines()]
 
     gr = graph()
@@ -141,4 +141,5 @@ if __name__ == '__main__':
             line = line.rstrip()
             fc=get_fingerprints(line)
             fc2=[map.get(f, f) for f in fc]
+            print('> ')
             print(''.join(fc2))
