@@ -495,6 +495,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
     //print_merged_chains(chains);
     //::std::map<unsigned long long, unsigned long long> mapping = chain_back_merging(chains,delta);
     //::std::cout << "Tiny Blocks" << ::std::endl;
+    /*
     ::std::cerr << "Graph Refinement..." << ::std::endl;
 
     ::std::cerr << "Step 1...";
@@ -515,6 +516,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
     ::std::cerr << "done!" << ::std::endl;
 
     ::std::cerr << "Graph Refinement...done!" << ::std::endl;
+    */
     //linking_refinement(linking_reads,chains,delta,mapping);
     print_graph(linking_reads,chains, mapping);
     
