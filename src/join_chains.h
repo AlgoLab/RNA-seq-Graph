@@ -22,10 +22,10 @@ int get_right_linked_read(string, tables&, int);
 ::std::map<unsigned long long, unsigned long long> chain_back_merging(map<unsigned long long, string>&, int);
 ::std::map<unsigned long long, unsigned long long> chains_unify(map<unsigned long long, string>&, unsigned int);
 
-void link_fragment_chains(tables&, ::std::map<unsigned long long, string> &);
+void link_fragment_chains(tables&, ::std::map<unsigned long long, string> &, int, char*);
 
 void print_graph(::std::vector<table_entry*>, ::std::map<unsigned long long, string>, 
-                 ::std::map<unsigned long long, unsigned long long>);
+                 ::std::map<unsigned long long, unsigned long long>, char*);
 
 void check_cutted_frags(CharString, ::std::vector<table_entry*> &, 
                         map<unsigned long long, string> &, unsigned int);

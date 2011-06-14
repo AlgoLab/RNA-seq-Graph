@@ -4,9 +4,9 @@ SRC_DIR:=src
 OBJ_DIR:=obj
 BIN_DIR:=bin
 
-CFLAGS+= -g -Wall -O2 -DNDEBUG -march=native
+CFLAGS+= -g -Wall -O2 -DNDEBUG -march=native -Wno-deprecated
 CXXFLAGS+= ${CFLAGS}
-LIBS =
+LIBS = -l boost_graph
 
 .PHONY: all
 all:action read_input

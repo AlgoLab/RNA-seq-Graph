@@ -211,6 +211,7 @@ int read_fasta(char* file_name, tables &t){
             return 1;
         }//End_if
     }else{
+	::std::cerr << "Error opening RNA-seq file " << file_name << ::std::endl;
         ::std::cerr << "Not a fasta file (.fa, .fas or .fasta)" << ::std::endl;
         return 2;
     }//End_if
