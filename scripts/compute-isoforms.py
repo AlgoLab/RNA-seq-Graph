@@ -48,6 +48,14 @@ def enumerate_all_paths(graph, origin, destination):
     return paths
 
 
+def splice_fasta(string):
+    rows = []
+    while string:
+        (head, string) = (string[:60], string[60:])
+        rows.append(head)
+    return rows
+
+
 if __name__ == '__main__':
     G=nx.DiGraph()
     G=nx.read_graphml("RNA-seq-graph.graphml")
@@ -58,6 +66,9 @@ if __name__ == '__main__':
             for destination in cc:
                 if origin != destination:
                     paths = enumerate_all_paths(G, origin, destination)
-                    [isoforms.append(''.join([nx.get_node_attributes(G,'seq')[v] for v in p])) for p in paths]
+                    for p in paths:
+                        isoforms.append(''.join([nx.get_node_attributes(G,'seq')[v] for v in p]))
 
-    pp.pprint(isoforms)
+    for (i,isoform) in enumerate(isoforms):
+        print("> isoform {}".format(i))
+        [print(r) for r in splice_fasta(isoform)]
