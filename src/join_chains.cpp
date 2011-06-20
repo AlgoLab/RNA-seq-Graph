@@ -100,7 +100,7 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
     }
     
     dp.property("length", get(::boost::vertex_name_t(), ug));
-    dp.property("sequence", get(::boost::vertex_color_t(), ug));
+    dp.property("seq", get(::boost::vertex_color_t(), ug));
     if(graphML_out_file == NULL){
         ::boost::write_graphml(::std::cout, ug, dp, true);
     }else{
