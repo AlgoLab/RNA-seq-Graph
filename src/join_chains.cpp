@@ -30,7 +30,7 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
     typedef boost::property<boost::vertex_name_t, int, 
         boost::property<boost::vertex_color_t, std::string> > VertexProperty;
 
-    typedef boost::adjacency_list< boost::vecS, boost::vecS, boost::undirectedS,
+    typedef boost::adjacency_list< boost::vecS, boost::vecS, boost::directedS,
          VertexProperty> Graph;
 
     std::vector<std::string> vertex_names;

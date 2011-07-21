@@ -24,7 +24,7 @@
 
 import networkx as nx
 import pprint as pp
-
+import sys
 
 def enumerate_all_paths(graph, origin, destination):
     '''
@@ -58,7 +58,8 @@ def splice_fasta(string):
 
 if __name__ == '__main__':
     G=nx.DiGraph()
-    G=nx.read_graphml("RNA-seq-graph.graphml")
+    #G=nx.read_graphml("RNA-seq-graph.graphml")
+    G=nx.read_graphml(sys.argv[1])
     # calculate the paths between all OD pairs
     isoforms = []
     for cc in nx.weakly_connected_components(G):
