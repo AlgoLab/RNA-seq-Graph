@@ -91,7 +91,7 @@ int main(int argc, char* argv[]){
         switch(debug){
         case 0:
             build_unspliced_chains(table);
-            chains = merge_unspliced_chains(table);
+            merge_unspliced_chains(table, chains);
             link_fragment_chains(table, chains, ref_level, graphML_out_file);
             break;
         case 1:
@@ -122,7 +122,7 @@ int main(int argc, char* argv[]){
             break;
         case 8:
             build_unspliced_chains(table);
-            chains = merge_unspliced_chains(table);
+            merge_unspliced_chains(table, chains);
             print_merged_chains(chains);
             break;
         default:

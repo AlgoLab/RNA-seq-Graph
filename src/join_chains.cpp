@@ -18,7 +18,7 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
     map<unsigned long long, int> graph_nodes;
     ofstream out_file;
     out_file.open("RNA-seq-graph.txt");
-    int node_id = 0;
+    long node_id = 0;
     //::std::cout << "graph: {" << ::std::endl;
     //::std::cout << "\tnode.shape\t: circle" << ::std::endl;
     //::std::cout << "\tnode.color\t: blue" << ::std::endl;
@@ -48,14 +48,15 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
         //File output
         out_file << "node#" << node_id << " " << ch_iter->second << "\n"; 
     }
+
     //Graph Initialization
-    bool graph[node_id][node_id];
-    for(int i=0; i<node_id; ++i){
-        for(int j=0; j<node_id; ++j){
-            graph[i][j] = 0;
-        }
-    }
- 
+    //bool graph[node_id][node_id];
+    //for(long i=0; i<node_id; ++i){
+    //    for(long j=0; j<node_id; ++j){
+    //        graph[i][j] = 0;
+    //    }
+    //}
+
     Graph ug(node_id);
     //Adding edges
     int num_edges = 0;
@@ -67,11 +68,12 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
             for(int k=0; k<links[i]->size_A_link(); ++k){
                 if(graph_nodes.find(mapping[links[i]->at_D_link(j)]) != graph_nodes.end() &&
                    graph_nodes.find(mapping[links[i]->at_A_link(k)]) != graph_nodes.end()){
-                    if(graph_nodes[mapping[links[i]->at_D_link(j)]] != graph_nodes[mapping[links[i]->at_A_link(k)]] && 
-                       graph[graph_nodes[mapping[links[i]->at_D_link(j)]]-1][graph_nodes[mapping[links[i]->at_A_link(k)]]-1] == 0){
+                    if(graph_nodes[mapping[links[i]->at_D_link(j)]] != graph_nodes[mapping[links[i]->at_A_link(k)]]){
+// && 
+//                       graph[graph_nodes[mapping[links[i]->at_D_link(j)]]-1][graph_nodes[mapping[links[i]->at_A_link(k)]]-1] == 0){
                         //::std::cout << "k " << k << ::std::endl;
                         //::std::cout << links[i].A_delta[k] << ::std::endl;
-                        graph[graph_nodes[mapping[links[i]->at_D_link(j)]]-1][graph_nodes[mapping[links[i]->at_A_link(k)]]-1] = 1;
+                        //graph[graph_nodes[mapping[links[i]->at_D_link(j)]]-1][graph_nodes[mapping[links[i]->at_A_link(k)]]-1] = 1;
                         //GDL output
                         //::std::cout << "\t edge: {" << ::std::endl;
                         //::std::cout << "\t\t source: \"" << graph_nodes[mapping[links[i]->at_D_link(j)]] << "\"" << ::std::endl;
@@ -590,9 +592,10 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
         ::std::cerr << "Wrong Refinement Option..." << ::std::endl;
         ::std::cerr << "No refinement preformed!" << ::std::endl;
     }
-    
+
+    //std::cerr << "Exporting Output...";
     //linking_refinement(linking_reads,chains,delta,mapping);
     print_graph(linking_reads,chains, mapping, out_file);
-    
+    //std::cerr << "done!" << std::endl;
 }//End_Method
 

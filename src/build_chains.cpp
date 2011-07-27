@@ -16,7 +16,7 @@ void print_spliced(const tables &table){
             table_entry* t = (*it).second.p;
             while(t != NULL){
                 String<Dna5> seq = t->get_short_read()->get_RNA_seq_sequence();
-                ::std::cout << c << " " << prefix(seq,length(seq)/2) << " " << suffix(seq,length(seq)/2) << " - " << t->get_short_read()->get_RNA_seq_transcript_id() << " " << t->get_short_read()->get_RNA_seq_offset() << ::std::endl;
+                ::std::cout << c << " " << prefix(seq,length(seq)/2) << " " << suffix(seq,length(seq)/2) << ::std::endl;
                 c++;
                 t = t->get_l_next();
             }//End_While
@@ -29,7 +29,7 @@ void print_spliced(const tables &table){
             table_entry* t = (*it).second.p;
             while(t != NULL){
                 String<Dna5> seq = t->get_short_read()->get_RNA_seq_sequence();
-                ::std::cout << c << " " << prefix(seq,length(seq)/2) << " " << suffix(seq,length(seq)/2) << " - " << t->get_short_read()->get_RNA_seq_transcript_id() << " " << t->get_short_read()->get_RNA_seq_offset() << ::std::endl;
+                ::std::cout << c << " " << prefix(seq,length(seq)/2) << " " << suffix(seq,length(seq)/2) << ::std::endl;
                 c++;
                 t = t->get_r_next();
             }//End_While
@@ -330,9 +330,8 @@ string merge_chains(string head, int offset, string to_be_chained){
 /* Merge previous built unspliced    */
 /* chains with half sequence overlap */
 /*************************************/
-map<unsigned long long, string> merge_unspliced_chains(const tables &table){
+void merge_unspliced_chains(const tables &table, map<unsigned long long, string>& chain_map){
     int c = 1;
-    map<unsigned long long, string> chain_map;
     hash_map::const_iterator it;
     // 1 - Build a new table with the chains
     for(it=table.left_map.begin(); it != table.left_map.end(); it++){
@@ -362,27 +361,32 @@ map<unsigned long long, string> merge_unspliced_chains(const tables &table){
             c++;
         }//End_If
     }//End_For
-    // 2 - Merge the chains built
+
+    // 2 - Merge the chains built  
     unsigned int rna_seq_length = length((*table.left_map.begin()).second.p->get_short_read()->get_RNA_seq_sequence());
     map<unsigned long long, string>::iterator iter;
     c = 0;
+    std::cerr << "Fine building\n";
     for(iter=chain_map.begin(); iter != chain_map.end(); iter++){
-        //c++;
-        //::std::cout << c << " " << (*iter).second << ::std::endl << ::std::endl;
+        c++;
+        std::cout << c << " " << (*iter).second << ::std::endl << ::std::endl;
         for(unsigned int j=1; j<=rna_seq_length/2; j++){
             string segment;
             assign(segment,infix((*iter).second,j,rna_seq_length/2+j));
             if(chain_map.find(fingerprint(segment)) != chain_map.end()){
+		std::cerr << "Prima merge...";
                 string merged = merge_chains((*iter).second, j, chain_map[fingerprint(segment)]);
+		std::cerr << "e dopo\n";
                 if(merged != ""){
                     (*iter).second = merged;
+		    std::cerr << "Prima erase...";
                     chain_map.erase(fingerprint(segment));
+		    std::cerr << "e dopo\n";
                 }//End_If
             }//End_If
         }//End_For
     }//End_For
-    
-    return chain_map;
+    std::cerr << "Fine merging\n";
 }//End_Method
 
 /**************************/

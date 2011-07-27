@@ -12,12 +12,12 @@ table_entry::table_entry(String<Dna5> seq,
 
     this->left_fingerprint = left_f;
     this->right_fingerprint = right_f;
-    this->junction_offset = 0;
+    //this->junction_offset = 0;
     this->chain_next = NULL;
     this->chain_prev = NULL;
     this->frequency = 1;
 }
-
+/*
 table_entry::table_entry(String<Dna5> seq, string source, string gene_id, 
                          unsigned long long left_f, unsigned long long right_f){
     short_read = new RNA_seq(seq, source, gene_id);
@@ -33,8 +33,8 @@ table_entry::table_entry(String<Dna5> seq, string source, string gene_id,
     this->chain_next = NULL;
     this->chain_prev = NULL;
     this->frequency = 1;
-}
-
+}*/
+/*
 table_entry::table_entry(String<Dna5> seq, string source, string gene_id, 
                          int gene_strand,
                          unsigned long long left_f, unsigned long long right_f){
@@ -51,8 +51,8 @@ table_entry::table_entry(String<Dna5> seq, string source, string gene_id,
     this->chain_next = NULL;
     this->chain_prev = NULL;
     this->frequency = 1;
-}
-
+}*/
+/*
 table_entry::table_entry(String<Dna5> seq, string source, string gene_id, 
                          int gene_strand, int transcript_id, long offset, int clone_end,
                          unsigned long long left_f, unsigned long long right_f){
@@ -69,7 +69,7 @@ table_entry::table_entry(String<Dna5> seq, string source, string gene_id,
     this->chain_next = NULL;
     this->chain_prev = NULL;
     this->frequency = 1;
-}
+}*/
 
 //Distructor
 table_entry::~table_entry(){
@@ -94,7 +94,7 @@ table_entry::table_entry(const table_entry& rhs){
 
     left_fingerprint = rhs.left_fingerprint;
     right_fingerprint = rhs.right_fingerprint;
-    junction_offset = rhs.junction_offset;
+    //junction_offset = rhs.junction_offset;
     chain_next = rhs.chain_next;
     chain_prev = rhs.chain_prev;
     frequency = rhs.frequency;
@@ -116,7 +116,7 @@ table_entry& table_entry::operator=(const table_entry& rhs){
 
     left_fingerprint = rhs.left_fingerprint;
     right_fingerprint = rhs.right_fingerprint;
-    junction_offset = rhs.junction_offset;
+    //junction_offset = rhs.junction_offset;
     chain_next = rhs.chain_next;
     chain_prev = rhs.chain_prev;
     frequency = rhs.frequency;
@@ -147,10 +147,10 @@ void table_entry::set_left_fingerprint(unsigned long long left_f){
 void table_entry::set_right_fingerprint(unsigned long long right_f){
     this->right_fingerprint = right_f;
 }
-
+/*
 void table_entry::set_junction_offset(int junction_offset){
     this->junction_offset = junction_offset;
-}
+}*/
 
 void table_entry::set_chain_next(table_entry* chain_next){
     this->chain_next = chain_next;
@@ -188,9 +188,10 @@ unsigned long long table_entry::get_left_fingerprint() const{
 unsigned long long table_entry::get_right_fingerprint() const{
     return right_fingerprint;
 }
+/*
 int table_entry::get_junction_offset() const{
     return junction_offset;
-}
+}*/
 
 table_entry* table_entry::get_chain_next() const{
     return chain_next;

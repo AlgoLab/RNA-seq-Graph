@@ -44,6 +44,16 @@ unsigned long long fingerprint(const string& seq){
 /*********************************************/
 /* Parse Fasta Information                   */
 /*********************************************/
+table_entry* build_entry(String<Dna5> seq){
+    table_entry* el = NULL;
+    string left_seq;
+    assign(left_seq,prefix(seq,length(seq)/2));
+    string right_seq;
+    assign(right_seq,suffix(seq,length(seq)/2));
+    el = new table_entry(seq,fingerprint(left_seq),fingerprint(right_seq));
+    return el;
+}
+/*
 table_entry* parse_fasta(String<Dna5> seq, string meta){
     table_entry* el = NULL;
     string left_seq;
@@ -98,7 +108,7 @@ table_entry* parse_fasta(String<Dna5> seq, string meta){
     }//End_If
     return el;
 }//End_Method
-
+*/
 /***************************************/
 /* Add entries in the "Hash Table"     */
 /***************************************/
@@ -194,10 +204,18 @@ int read_fasta(char* file_name, tables &t){
                 }
                 //Parse RNA-seq Sequence
                 if(length(fasta_seq) >= READ_LEN){
+		    //All the substrings of length READ_LEN
+		    /*
                     for(unsigned int i = 0;i<=length(fasta_seq)-READ_LEN;i++){
-                        table_entry* tab = parse_fasta(infix(fasta_seq,i,i+READ_LEN),toCString(fasta_tag));
+                        //table_entry* tab = parse_fasta(infix(fasta_seq,i,i+READ_LEN),toCString(fasta_tag));
+			table_entry* tab = build_entry(infix(fasta_seq,i,i+READ_LEN));
                         add_entry(t, tab);
-                    }
+                    }*/
+		    //Only the first and the last substrings of length READ_LEN
+		    table_entry* tab = build_entry(infix(fasta_seq,0,READ_LEN));
+                    add_entry(t, tab);
+		    tab = build_entry(infix(fasta_seq,length(fasta_seq)-READ_LEN,length(fasta_seq)));
+                    add_entry(t, tab);
                 }else{
                     ::std::cerr << "Invalid fasta entry" << ::std::endl;
                 }
