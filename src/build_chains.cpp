@@ -1,5 +1,7 @@
 #include <iostream>
 
+#include <cassert>
+
 #include "build_chains.h"
 
 /**********************************/
@@ -11,6 +13,7 @@
 void print_spliced(const tables &table){
     int c = 1;
     hash_map::const_iterator it;
+    std::cerr << "Printing Spliced Reads...";
     for(it=table.left_map.begin(); it != table.left_map.end(); it++){
         if(!(*it).second.unspliced){
             table_entry* t = (*it).second.p;
@@ -36,6 +39,7 @@ void print_spliced(const tables &table){
             ::std::cout << ::std::endl;
         }//End_If
     }//End_For
+    std::cerr << "done!" << std::endl;
 }//End_Method
 
 /**********************************/
@@ -48,6 +52,7 @@ void print_half_spliced(const tables &table){
     hash_map::const_iterator seq_it;
     int len = length(table.left_map.begin()->second.p->get_short_read()->get_RNA_seq_sequence());
     int c = 0;
+    std::cerr << "Printing Half Spliced Reads...";
     //Look for half spliced RNA-seqs
     for(seq_it=table.left_map.begin(); seq_it != table.left_map.end(); seq_it++){
         if(!(*seq_it).second.unspliced){
@@ -137,6 +142,7 @@ void print_half_spliced(const tables &table){
             }//End_If
         }//End_If
     }//End_For
+    std::cerr << "done!" << std::endl;
 }
 
 /********************************/
@@ -148,6 +154,7 @@ void print_half_spliced(const tables &table){
 void print_unspliced(const tables &table){
     int c = 1;
     hash_map::const_iterator it;
+    std::cerr << "Printing Unspliced Reads...";
     for(it=table.left_map.begin(); it != table.left_map.end(); it++){
         if((*it).second.unspliced){
             table_entry* t = (*it).second.p;
@@ -159,6 +166,7 @@ void print_unspliced(const tables &table){
             }//End_If
         }//End_If
     }//End_For
+    std::cerr << "done!" << std::endl;
 }//End_Method
 
 /*******************************/
@@ -166,6 +174,7 @@ void print_unspliced(const tables &table){
 /*******************************/
 void print_hash_table(const tables &table, char l_r){
     if(l_r == 'l'){
+	std::cerr << "Printing Left Hash Table...";
         int c = 1;
         long sum = 0;
         hash_map::const_iterator it;
@@ -182,8 +191,10 @@ void print_hash_table(const tables &table, char l_r){
             ::std::cout << ::std::endl;
             //c++;
         }//End_For
-        ::std::cout << "Tot " << sum << ::std::endl;
+ 	std::cerr << "done!" << std::endl;
+        std::cerr << "Tot " << sum << ::std::endl;
     }else{
+	std::cerr << "Printing Right Hash Table...";
         int c = 1;
         long sum = 0;
         hash_map::const_iterator it;
@@ -200,7 +211,8 @@ void print_hash_table(const tables &table, char l_r){
             ::std::cout << ::std::endl;
             //c++;
         }//End_For
-        ::std::cout << "Tot " << sum << ::std::endl;
+	std::cerr << "done!" << std::endl;
+        std::cerr << "Tot " << sum << ::std::endl;
     }//End_If
 }//End_Method
 
@@ -210,6 +222,8 @@ void print_hash_table(const tables &table, char l_r){
 /*************************************/
 void build_unspliced_chains(tables &table){
     hash_map::iterator it;
+    clock_t tStart = clock();
+    std::cerr << "Composing Unspliced Chains...";
     for(it = table.left_map.begin(); it != table.left_map.end(); ++it){
         if((*it).second.unspliced && table.right_map[(*it).second.p->get_right_fingerprint()].unspliced){
             table_entry* t = (*it).second.p;
@@ -224,6 +238,9 @@ void build_unspliced_chains(tables &table){
             }//End_If
         }
     }//End_For
+    std::cerr << "done!" << std::endl;
+    std::cerr << "Chains composition took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
+    std::cerr << " seconds." << std::endl << std::endl;
 }//End_Method
 
 /*************************************/
@@ -232,6 +249,8 @@ void build_unspliced_chains(tables &table){
 /*************************************/
 void build_unspliced_chains(tables &table, int overlap){
     hash_map::iterator it;
+    clock_t tStart = clock();
+    std::cerr << "Composing Unspliced Chains...";
     for(it = table.left_map.begin(); it != table.left_map.end(); ++it){
         if((*it).second.unspliced && table.right_map[(*it).second.p->get_right_fingerprint()].unspliced){
             table_entry* t = (*it).second.p;
@@ -250,6 +269,9 @@ void build_unspliced_chains(tables &table, int overlap){
             }
         }
     }//End_For
+    std::cerr << "done!" << std::endl;
+    std::cerr << "Chains composition took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
+    std::cerr << " seconds." << std::endl << std::endl;
 }//End_Method
 
 /*************************************/
@@ -258,6 +280,7 @@ void build_unspliced_chains(tables &table, int overlap){
 void print_unspliced_chains(const tables &table){
     int c = 1;
     hash_map::const_iterator it;
+    std::cerr << "Printing Chains with Half Overlap...";
     for(it=table.left_map.begin(); it != table.left_map.end(); it++){
         table_entry* t = (*it).second.p;
         if((*it).second.unspliced  && 
@@ -268,12 +291,13 @@ void print_unspliced_chains(const tables &table){
             while(t->get_chain_next() != NULL){
                 t = t->get_chain_next();
                 seq = t->get_short_read()->get_RNA_seq_sequence();
-                ::std::cout << suffix(seq,length(seq)/2);
+                std::cout << suffix(seq,length(seq)/2);
             }//End_While
             c++;
-            ::std::cout << ::std::endl << ::std::endl;
+            std::cout << ::std::endl << ::std::endl;
         }//End_If
     }//End_For
+    std::cerr << "done!" << std::endl;
 }//End_Method
 
 /*************************************/
@@ -283,65 +307,68 @@ void print_unspliced_chains(const tables &table){
 void print_unspliced_chains(const tables &table, int overlap){
     int c = 1;
     hash_map::const_iterator it;
+    std::cerr << "Printing Chains with Overlap " << overlap << "...";
     for(it=table.left_map.begin(); it != table.left_map.end(); it++){
         table_entry* t = (*it).second.p;
         if((*it).second.unspliced &&
            table.right_map.find((*it).second.p->get_right_fingerprint())->second.unspliced && 
            t->get_chain_prev() == NULL){
             String<Dna5> seq = t->get_short_read()->get_RNA_seq_sequence();
-            ::std::cout << c << " " << prefix(seq,length(seq)/2) << suffix(seq,length(seq)/2);
+            std::cout << c << " " << prefix(seq,length(seq)/2) << suffix(seq,length(seq)/2);
             while(t->get_chain_next() != NULL){
                 t = t->get_chain_next();
                 seq = t->get_short_read()->get_RNA_seq_sequence();
                 ::std::cout << suffix(seq,length(seq)-overlap);
             }//End_While
             c++;
-            ::std::cout << ::std::endl << ::std::endl;
+            std::cout << ::std::endl << ::std::endl;
         }//End_If
     }//End_For
+    std::cerr << "done!" << std::endl;
 }//End_Method
 
 /******************************/
 /* Merge two chains based on  */
 /* their overlap              */
 /******************************/
-string merge_chains(string head, int offset, string to_be_chained){
+static string
+merge_chains(const string& head, int offset, const string& to_be_chained){
+	//std::cerr << head << "  " << offset << "  " << to_be_chained << std::endl;
+	string result= "";
     if(to_be_chained.length() > head.length() - offset){
         long l = to_be_chained.length() - (head.length() - offset);
         //::std::cout << head.substr(offset) << ::std::endl;
         //::std::cout << to_be_chained.substr(0, to_be_chained.length() - l) << ::std::endl;
         if(head.substr(offset) == to_be_chained.substr(0, to_be_chained.length() - l)){ 
             //::std::cout << to_be_chained.substr(to_be_chained.length() - l) << ::std::endl;
-            head.append(to_be_chained.substr(to_be_chained.length() - l));
-        }else{
-            return "";
+		result= head + to_be_chained.substr(to_be_chained.length() - l);
         }//End_If
     }else{
         if(head.substr(offset, to_be_chained.length()) == to_be_chained){
-            return head;
-        }else{
-            return "";
+            result= head;
         }
     }//End_If
-    return head;
+    return result;
 }//End_Method
 
 /*************************************/
 /* Merge previous built unspliced    */
 /* chains with half sequence overlap */
 /*************************************/
-void merge_unspliced_chains(const tables &table, map<unsigned long long, string>& chain_map){
+void merge_unspliced_chains(tables &table, map<unsigned long long, string>& chain_map){
     int c = 1;
     hash_map::const_iterator it;
+    clock_t tStart = clock();
+    std::cerr << "Building Unspliced Chains...";
     // 1 - Build a new table with the chains
     for(it=table.left_map.begin(); it != table.left_map.end(); it++){
         table_entry* t = (*it).second.p;
         //Uncomment and substitute with the following to consider only chain longer than simple RNA-seqs
         //if((*it).second.unspliced && t->get_chain_prev() == NULL && t->get_chain_next() != NULL){
-        if((*it).second.unspliced && 
+        if((*it).second.unspliced && t != NULL &&
            table.right_map.find((*it).second.p->get_right_fingerprint())->second.unspliced && 
            t->get_chain_prev() == NULL){
-            //Chains longer than simple RNA-seq
+            
             table_entry* t_temp = t;
             String<Dna5> seq = t_temp->get_short_read()->get_RNA_seq_sequence();
             string chain;
@@ -354,39 +381,76 @@ void merge_unspliced_chains(const tables &table, map<unsigned long long, string>
                 //::std::cout << " " << t_temp->get_short_read()->get_RNA_seq_transcript_id();
                 //::std::cout << " " << t_temp->get_short_read()->get_RNA_seq_offset();
                 //::std::cout << ::std::endl;
-                t_temp = t_temp->get_chain_next();
+            	t_temp = t_temp->get_chain_next();
             }//End_While
             //::std::cout << c << " " << chain << ::std::endl;
             chain_map[t->get_left_fingerprint()] = chain;
+	    //Eliminazione read utilizzati
+		
+	    table_entry* p = t;
+            while(t != NULL){
+		//table.left_map.erase(p->get_left_fingerprint());
+		//table.right_map.erase(p->get_right_fingerprint());
+		table.left_map[p->get_left_fingerprint()].p = NULL;
+		table.right_map[p->get_right_fingerprint()].p = NULL;
+                p = p->get_chain_next();
+                delete t;
+                t = p;
+            }
             c++;
         }//End_If
     }//End_For
-
+    hash_map::iterator iterator = table.left_map.begin();
+    while(iterator != table.left_map.end()){
+	if(iterator->second.p == NULL){
+		table.left_map.erase(iterator++);
+	}else{
+		++iterator;
+	}
+    }
+    iterator = table.right_map.begin();
+    while(iterator != table.right_map.end()){
+	if(iterator->second.p == NULL){
+		table.right_map.erase(iterator++);
+	}else{
+		++iterator;
+	}
+    }
+    std::cerr << "done!" << std::endl;
+    std::cerr << "Built " << c << " chains took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
+    std::cerr << " seconds." << std::endl << std::endl;
     // 2 - Merge the chains built  
     unsigned int rna_seq_length = length((*table.left_map.begin()).second.p->get_short_read()->get_RNA_seq_sequence());
     map<unsigned long long, string>::iterator iter;
     c = 0;
-    std::cerr << "Fine building\n";
+    //std::cerr << "Fine building\n";
+    std::cerr << "Merging Chains...";
+    tStart = clock();
     for(iter=chain_map.begin(); iter != chain_map.end(); iter++){
         c++;
-        std::cout << c << " " << (*iter).second << ::std::endl << ::std::endl;
+        //std::cout << c << " " << (*iter).second << ::std::endl << ::std::endl;
         for(unsigned int j=1; j<=rna_seq_length/2; j++){
             string segment;
             assign(segment,infix((*iter).second,j,rna_seq_length/2+j));
-            if(chain_map.find(fingerprint(segment)) != chain_map.end()){
-		std::cerr << "Prima merge...";
+	    map<unsigned long long, string>::const_iterator it_segm= chain_map.find(fingerprint(segment));
+            if((it_segm != chain_map.end()) && (it_segm != iter)){
+		//std::cerr << "Prima merge..." << fingerprint(segment) << std::endl;
                 string merged = merge_chains((*iter).second, j, chain_map[fingerprint(segment)]);
-		std::cerr << "e dopo\n";
+		//std::cerr << "e dopo" << std::endl;
                 if(merged != ""){
+                    assert(iter->first != fingerprint(segment));
                     (*iter).second = merged;
-		    std::cerr << "Prima erase...";
+		    //std::cerr << "Prima erase " << fingerprint(segment) << "\n";
                     chain_map.erase(fingerprint(segment));
-		    std::cerr << "e dopo\n";
+		    //std::cerr << "e dopo\n";
                 }//End_If
             }//End_If
         }//End_For
     }//End_For
-    std::cerr << "Fine merging\n";
+    std::cerr << "done!" << std::endl;
+    std::cerr << "Merge took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
+    std::cerr << " seconds." << std::endl << std::endl;
+    //std::cerr << "Fine merging\n";
 }//End_Method
 
 /**************************/
@@ -395,10 +459,12 @@ void merge_unspliced_chains(const tables &table, map<unsigned long long, string>
 /**************************/
 void print_merged_chains(::std::map<unsigned long long, string> & chains){
     int c = 0;
-    ::std::map<unsigned long long, string>::iterator ch_it;
+    std::map<unsigned long long, string>::iterator ch_it;
+    std::cerr << "Printing Chains...";
     for(ch_it = chains.begin(); ch_it != chains.end(); ++ch_it){
         c++;
-        ::std::cout << c << " " << ch_it->second << ::std::endl << ::std::endl;
+        std::cout << c << " " << ch_it->second << ::std::endl << ::std::endl;
     }
+    std::cerr << "done!" << std::endl;
 }
 

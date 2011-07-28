@@ -21,7 +21,7 @@ class RNA_seq{
     
     public:
     //Constructors
-    RNA_seq(String<Dna5>);
+    RNA_seq(const String<Dna5>&);
     //RNA_seq(String<Dna5>, string, string);
     //RNA_seq(String<Dna5>, string, string, int);
     //RNA_seq(String<Dna5>, string, string, int, int, long, int);
@@ -30,7 +30,9 @@ class RNA_seq{
     //Overloading =
     RNA_seq& operator=(const RNA_seq&);
     //Set Methods
-    void set_RNA_seq_sequence(String<Dna5>);
+    void set_RNA_seq_sequence(const String<Dna5>& seq) {
+        sequence = seq;
+    }
     //void set_RNA_seq_source(string);
     //void set_RNA_seq_gene_id(string);
     //void set_RNA_seq_gene_strand(int);
@@ -39,7 +41,9 @@ class RNA_seq{
     //void set_RNA_seq_clone_end(int);
     
     //Get Mehtods
-    String<Dna5> get_RNA_seq_sequence() const;
+    const String<Dna5>& get_RNA_seq_sequence() const {
+        return sequence;
+    }
     //string get_RNA_seq_source() const;
     //string get_RNA_seq_gene_id() const;
     //int get_RNA_seq_gene_strand() const;

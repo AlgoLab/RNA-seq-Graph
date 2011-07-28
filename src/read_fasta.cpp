@@ -3,6 +3,7 @@
 #include <string>
 #include <map>
 #include <sstream>
+#include <ctime>
 
 #include <seqan/sequence.h>
 #include <seqan/file.h>
@@ -186,12 +187,13 @@ int read_fasta(char* file_name, tables &t){
         ::std::fstream fstrm;
         fstrm.open(file_name, ::std::ios_base::in | ::std::ios_base::binary);
         if(fstrm.is_open()){
+	    clock_t tStart = clock();
             ::std::cerr << "Processing RNA-seq file..." << ::std::endl;
             String<char> fasta_tag;
             String<Dna5> fasta_seq;
             int c = 0;
             while(!fstrm.eof()){
-                c++;
+                
                 //::std::cerr << c << ::std::endl;
                 readMeta(fstrm, fasta_tag, Fasta());
                 read(fstrm, fasta_seq, Fasta());
@@ -210,20 +212,23 @@ int read_fasta(char* file_name, tables &t){
                         //table_entry* tab = parse_fasta(infix(fasta_seq,i,i+READ_LEN),toCString(fasta_tag));
 			table_entry* tab = build_entry(infix(fasta_seq,i,i+READ_LEN));
                         add_entry(t, tab);
+			c++;
                     }*/
 		    //Only the first and the last substrings of length READ_LEN
 		    table_entry* tab = build_entry(infix(fasta_seq,0,READ_LEN));
                     add_entry(t, tab);
 		    tab = build_entry(infix(fasta_seq,length(fasta_seq)-READ_LEN,length(fasta_seq)));
                     add_entry(t, tab);
+		    c+=2;
                 }else{
                     ::std::cerr << "Invalid fasta entry" << ::std::endl;
                 }
                 //::std::cerr << tab->get_short_read()->get_RNA_seq_sequence() << ::std::endl;
             }//End_while
             ::std::cerr << "Processing RNA-seq file...done!" << ::std::endl;
-            fstrm.close();
-            
+	    std::cerr << "Loading " << c << " sequences took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
+            std::cerr << " seconds." << std::endl << std::endl;
+            fstrm.close();         
         }else{
             ::std::cerr << "Unable to open file " << file_name << ::std::endl;
             return 1;

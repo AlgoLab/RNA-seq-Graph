@@ -4,7 +4,7 @@
 #include "RNA_seq.h"
 
 //Constructors
-RNA_seq::RNA_seq(String<Dna5> seq){
+RNA_seq::RNA_seq(const String<Dna5>& seq){
     assign(sequence,seq);
     //No source and gene_id
     //this->source = "NONE";
@@ -85,9 +85,6 @@ RNA_seq& RNA_seq::operator=(const RNA_seq& rhs){
 }
 
 //Set Methods
-void RNA_seq::set_RNA_seq_sequence(String<Dna5> seq){
-    sequence = seq;
-}
 /*
 void RNA_seq::set_RNA_seq_source(string source){
     this->source = source;
@@ -113,9 +110,6 @@ void RNA_seq::set_RNA_seq_clone_end(int){
 }*/
 
 //Get Mehtods
-String<Dna5> RNA_seq::get_RNA_seq_sequence() const{
-    return sequence;
-}
 /*
 string RNA_seq::get_RNA_seq_source() const{
     return source;

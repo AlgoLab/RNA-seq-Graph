@@ -18,7 +18,6 @@ void print_unspliced_chains(const tables&);
 void print_unspliced_chains(const tables&, int);
 
 //Chains Merging
-string merge_chains(string, int, string);
-void merge_unspliced_chains(const tables&, map<unsigned long long, string>&);
+void merge_unspliced_chains(tables&, map<unsigned long long, string>&);
 void print_merged_chains(::std::map<unsigned long long, string> &);
 #endif
