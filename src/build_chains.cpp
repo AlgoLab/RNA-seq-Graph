@@ -356,7 +356,8 @@ merge_chains(const string& head, int offset, const string& to_be_chained){
 /* chains with half sequence overlap */
 /*************************************/
 void merge_unspliced_chains(tables &table, map<unsigned long long, string>& chain_map){
-    int c = 1;
+    int c = 0;
+    unsigned int rna_seq_length = length((*table.left_map.begin()).second.p->get_short_read()->get_RNA_seq_sequence());
     hash_map::const_iterator it;
     clock_t tStart = clock();
     std::cerr << "Building Unspliced Chains...";
@@ -420,35 +421,40 @@ void merge_unspliced_chains(tables &table, map<unsigned long long, string>& chai
     std::cerr << "Built " << c << " chains took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
     std::cerr << " seconds." << std::endl << std::endl;
     // 2 - Merge the chains built  
-    unsigned int rna_seq_length = length((*table.left_map.begin()).second.p->get_short_read()->get_RNA_seq_sequence());
+    
     map<unsigned long long, string>::iterator iter;
     c = 0;
-    //std::cerr << "Fine building\n";
+    /****************************************************/
+    /* Merging depth -> length of the considered prefix */
+    /****************************************************/
+    //unsigned int merg_depth = rna_seq_length*2;
     std::cerr << "Merging Chains...";
     tStart = clock();
     for(iter=chain_map.begin(); iter != chain_map.end(); iter++){
-        c++;
+        //c++;
         //std::cout << c << " " << (*iter).second << ::std::endl << ::std::endl;
-        for(unsigned int j=1; j<=rna_seq_length/2; j++){
+	/****************************************************/
+	/* Merging depth -> length of the considered prefix */
+	/****************************************************/
+        for(unsigned int j=1; j<iter->second.length()-(rna_seq_length/2)/* && (j<=merg_depth)*/; j++){
             string segment;
             assign(segment,infix((*iter).second,j,rna_seq_length/2+j));
 	    map<unsigned long long, string>::const_iterator it_segm= chain_map.find(fingerprint(segment));
             if((it_segm != chain_map.end()) && (it_segm != iter)){
-		//std::cerr << "Prima merge..." << fingerprint(segment) << std::endl;
                 string merged = merge_chains((*iter).second, j, chain_map[fingerprint(segment)]);
-		//std::cerr << "e dopo" << std::endl;
                 if(merged != ""){
                     assert(iter->first != fingerprint(segment));
                     (*iter).second = merged;
-		    //std::cerr << "Prima erase " << fingerprint(segment) << "\n";
+		    //if(merged.length() < rna_seq_length/2)
+			//std::cerr << merged << " " << merged.length() << std::endl;
                     chain_map.erase(fingerprint(segment));
-		    //std::cerr << "e dopo\n";
+		    c++;
                 }//End_If
             }//End_If
         }//End_For
     }//End_For
-    std::cerr << "done!" << std::endl;
-    std::cerr << "Merge took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
+    std::cerr << "done! " << std::endl;
+    std::cerr << "Merging to " << chain_map.size() << " chains took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
     std::cerr << " seconds." << std::endl << std::endl;
     //std::cerr << "Fine merging\n";
 }//End_Method

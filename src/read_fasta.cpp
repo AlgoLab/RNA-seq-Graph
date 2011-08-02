@@ -201,7 +201,7 @@ int read_fasta(char* file_name, tables &t){
                 if ((read_size/(double)file_dimension)*100 - 1 >= perc) {
                     perc++;
                     if(perc%10 == 0){
-                        ::std::cerr << "Processed: " << perc << "%" << endl;
+                        std::cerr << "Processed: " << perc << "%" << endl;
                     }
                 }
                 //Parse RNA-seq Sequence
@@ -226,7 +226,7 @@ int read_fasta(char* file_name, tables &t){
                 //::std::cerr << tab->get_short_read()->get_RNA_seq_sequence() << ::std::endl;
             }//End_while
             ::std::cerr << "Processing RNA-seq file...done!" << ::std::endl;
-	    std::cerr << "Loading " << c << " sequences took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
+	    std::cerr << "Loaded " << c << " sequences took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
             std::cerr << " seconds." << std::endl << std::endl;
             fstrm.close();         
         }else{
