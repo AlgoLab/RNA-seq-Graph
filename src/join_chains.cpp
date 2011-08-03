@@ -8,6 +8,8 @@
 
 #include "join_chains.h"
 #include "build_chains.h"
+//Comment to disable GDL output
+#define GDL_OUT
 
 /******************************/
 /* Build and print the graph  */
@@ -16,17 +18,35 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
                  map<unsigned long long, unsigned long long> mapping, char* graphML_out_file){
     map<unsigned long long, string>::const_iterator ch_iter;
     map<unsigned long long, int> graph_nodes;
-    ofstream out_file;
-    out_file.open("RNA-seq-graph.txt");
     long node_id = 0;
-    //::std::cout << "graph: {" << ::std::endl;
-    //::std::cout << "\tnode.shape\t: circle" << ::std::endl;
-    //::std::cout << "\tnode.color\t: blue" << ::std::endl;
-    //::std::cout << "\tnode.height\t: 80" << ::std::endl;
-    //::std::cout << "\tnode.width\t: 80" << ::std::endl;
+#ifdef GDL_OUT
+    //Alternative output
+    string out_file_name = "";
+    string gdl_file_name = "";
+    if(graphML_out_file == NULL){
+	out_file_name = "RNA-seq-graph.txt";
+	gdl_file_name = "RNA-seq-graph.gdl";
+    }else{
+	out_file_name = graphML_out_file;
+	out_file_name += ".txt";
+	gdl_file_name = graphML_out_file;
+	gdl_file_name += ".gdl";
+    }
+    //Out file
+    ofstream out_file;
+    out_file.open(out_file_name.c_str());
+    //GDL file
+    ofstream gdl_file;
+    gdl_file.open(gdl_file_name.c_str());
+    //GDL header
+    gdl_file << "graph: {\n";
+    gdl_file << "\tnode.shape\t: circle\n";
+    //std::cout << "\tnode.color\t: blue\n";
+    gdl_file << "\tnode.height\t: 80\n";
+    gdl_file << "\tnode.width\t: 80\n";
+#endif
 
     //GraphML
-
     typedef boost::property<boost::vertex_name_t, int, 
         boost::property<boost::vertex_color_t, std::string> > VertexProperty;
 
@@ -35,18 +55,20 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
 
     std::vector<std::string> vertex_names;
     for(ch_iter = chains.begin(); ch_iter != chains.end(); ++ch_iter){
+	//Graphml nodes
         vertex_names.push_back(ch_iter->second);
         ++node_id;
         graph_nodes[ch_iter->first] = node_id;
-        
-        //GDL output
-        //::std::cout << "\t node: {" << ::std::endl;
-        //::std::cout << "\t\t title: \"" << node_id << "\"" << ::std::endl;
-        //::std::cout << "\t\t label: \"" << node_id << " - " << ch_iter->second.length() << "\"" << ::std::endl;
-        //::std::cout << "\t\t //" << ch_iter->second << ::std::endl;
-        //::std::cout << "\t}" << ::std::endl;
+#ifdef GDL_OUT        
+        //GDL nodes
+        gdl_file << "\t node: {\n";
+        gdl_file << "\t\t title: \"" << node_id << "\"\n";
+        gdl_file << "\t\t label: \"" << node_id << " - " << ch_iter->second.length() << "\"\n";
+        gdl_file << "\t\t //" << ch_iter->second << "\n";
+        gdl_file << "\t}\n";
         //File output
         out_file << "node#" << node_id << " " << ch_iter->second << "\n"; 
+#endif
     }
 
     //Graph Initialization
@@ -57,7 +79,9 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
     //    }
     //}
 
+    //Graphml graph
     Graph ug(node_id);
+
     //Adding edges
     int num_edges = 0;
     for(unsigned int i=0; i<links.size(); ++i){
@@ -70,22 +94,28 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
                    graph_nodes.find(mapping[links[i]->at_A_link(k)]) != graph_nodes.end()){
                     if(graph_nodes[mapping[links[i]->at_D_link(j)]] != graph_nodes[mapping[links[i]->at_A_link(k)]]){
 // && 
-//                       graph[graph_nodes[mapping[links[i]->at_D_link(j)]]-1][graph_nodes[mapping[links[i]->at_A_link(k)]]-1] == 0){
+//                      graph[graph_nodes[mapping[links[i]->at_D_link(j)]]-1][graph_nodes[mapping[links[i]->at_A_link(k)]]-1] == 0){
                         //std::cout << "k " << k << std::endl;
                         //std::cout << links[i].A_delta[k] << std::endl;
                         //graph[graph_nodes[mapping[links[i]->at_D_link(j)]]-1][graph_nodes[mapping[links[i]->at_A_link(k)]]-1] = 1;
+			#ifdef GDL_OUT
                         //GDL output
-                        //std::cout << "\t edge: {" << std::endl;
-                        //std::cout << "\t\t source: \"" << graph_nodes[mapping[links[i]->at_D_link(j)]] << "\"" << std::endl;
-                        //std::cout << "\t\t target: \"" << graph_nodes[mapping[links[i]->at_A_link(k)]] << "\"" << std::endl;
-                        //std::cout << "\t}" << std::endl;
-                        //File output
+                        gdl_file << "\t edge: {\n";
+                        gdl_file << "\t\t source: \"" << graph_nodes[mapping[links[i]->at_D_link(j)]] << "\"\n";
+                        gdl_file << "\t\t target: \"" << graph_nodes[mapping[links[i]->at_A_link(k)]] << "\"\n";
+                        gdl_file << "\t}\n";
+			#endif
+                        
                         num_edges++;
                         int source = graph_nodes[mapping[links[i]->at_D_link(j)]];
                         int target = graph_nodes[mapping[links[i]->at_A_link(k)]];
+			#ifdef GDL_OUT
+			//File output
                         out_file << "edge#" << num_edges << " ";
                         out_file << graph_nodes[mapping[links[i]->at_D_link(j)]] << ";";
                         out_file << graph_nodes[mapping[links[i]->at_A_link(k)]] << "\n";
+			#endif
+			//Graphml arcs
                         ::boost::add_edge(source-1,target-1,ug);
                     }
                 }
@@ -93,6 +123,11 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
         }//End_For
     }//End_For
 
+    //GDL end
+#ifdef GDL_OUT
+    gdl_file << "}";
+#endif
+    //Graphml export
     ::boost::dynamic_properties dp;
     ::boost::graph_traits<Graph>::vertex_iterator v, v_end;
     
@@ -114,8 +149,10 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
         out_stream.open(graphML_out_file);
         ::boost::write_graphml(out_stream, ug, dp, true);
     }
-    //std::cout << "}" << std::endl;
+#ifdef GDL_OUT    
     out_file.close();
+    gdl_file.close();
+#endif
 }//End_Method
 
 /**********************************/
@@ -562,6 +599,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
     std::cerr << "Linking graph nodes took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
     std::cerr << " seconds." << std::endl << std::endl;
     //print_merged_chains(chains);
+  #define MERGING
   #ifdef MERGING
     std::cerr << "Merging " << chains.size() << " Graph Nodes...";
     tStart = clock();
