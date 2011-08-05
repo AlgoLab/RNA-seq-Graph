@@ -473,4 +473,3 @@ void print_merged_chains(::std::map<unsigned long long, string> & chains){
     }
     std::cerr << "done!" << std::endl;
 }
-

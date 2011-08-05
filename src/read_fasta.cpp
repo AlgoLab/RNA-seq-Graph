@@ -4,6 +4,7 @@
 #include <map>
 #include <sstream>
 #include <ctime>
+#include <set>
 
 #include <seqan/sequence.h>
 #include <seqan/file.h>
@@ -110,6 +111,7 @@ table_entry* parse_fasta(String<Dna5> seq, string meta){
     return el;
 }//End_Method
 */
+
 /***************************************/
 /* Add entries in the "Hash Table"     */
 /***************************************/
@@ -163,6 +165,136 @@ void add_entry(tables &t, table_entry* entry){
         entry->set_r_prev(prev);
     }//End_If
 }//End_Method
+
+
+/*****************************/
+/* Try to correct reads that */
+/* that are spliced due to   */
+/* errors                    */
+/*****************************/
+void pruning(tables &table, int max_mismatch, int diff_threshold){
+    hash_map::iterator it;
+    clock_t tStart = clock();
+    std::cerr << "Pruning Reads...";
+    std::set< table_entry* >s;
+    for(it=table.left_map.begin(); it != table.left_map.end(); it++){
+        if(!(*it).second.unspliced){
+            table_entry* t = (*it).second.p;
+            s.insert(t);
+            t = t->get_l_next();	
+            while(t != NULL){
+                String<Dna5> seq = t->get_short_read()->get_RNA_seq_sequence();
+		std::set< table_entry* >::iterator spliced_it;
+		bool new_s = true;
+		for ( spliced_it=s.begin() ; spliced_it != s.end();){
+			int diff = 0;
+			for(unsigned int l=0; l<length(seq); ++l){
+				if((*spliced_it)->get_short_read()->get_RNA_seq_sequence()[l] != seq[l]) diff++;
+			}
+			if(diff <= max_mismatch){
+				if((*spliced_it)->get_frequency() < t->get_frequency() && 
+				   ((*spliced_it)->get_frequency()/(double)t->get_frequency())*100 < diff_threshold){
+					(*spliced_it)->get_l_prev()->set_l_next((*spliced_it)->get_l_next());
+					(*spliced_it)->get_l_next()->set_l_prev((*spliced_it)->get_l_prev());
+					delete(*spliced_it);
+					s.erase(spliced_it++);
+				}else{
+					if((t->get_frequency()/(double)(*spliced_it)->get_frequency())*100 < diff_threshold){
+						new_s = false;
+						if(t->get_l_prev() == NULL){
+							(*it).second.p = t->get_l_next();
+						}else{
+							t->get_l_prev()->set_l_next(t->get_l_next());
+						}
+						if(t->get_l_next() == NULL){
+							t->get_l_prev()->set_l_next(NULL);
+						}else{
+							t->get_l_next()->set_l_prev(t->get_l_prev());
+						}
+					}
+					++spliced_it;
+				}
+			}else{
+				++spliced_it;
+			}
+		}
+		if(new_s){
+                	s.insert(t);
+			t = t->get_l_next();
+		}else{
+			table_entry* tmp = t;
+			delete(t);
+			t = tmp->get_l_next();
+		}
+                
+            }//End_While*/
+	    if(s.size() == 1){
+		(*it).second.unspliced = true;
+	    }
+        }//End_If
+	s.clear();
+    }//End_For
+    std::cerr << "Meta' " << std::endl;
+    for(it=table.right_map.begin(); it != table.right_map.end(); it++){
+        if(!(*it).second.unspliced){
+            table_entry* t = (*it).second.p;
+            s.insert(t);
+            t = t->get_r_next();	
+            while(t != NULL){
+                String<Dna5> seq = t->get_short_read()->get_RNA_seq_sequence();
+		std::set< table_entry* >::iterator spliced_it;
+		bool new_s = true;
+		for ( spliced_it=s.begin() ; spliced_it != s.end();){
+			int diff = 0;
+			for(unsigned int l=0; l<length(seq); ++l){
+				if((*spliced_it)->get_short_read()->get_RNA_seq_sequence()[l] != seq[l]) diff++;
+			}
+			if(diff <= max_mismatch){
+				if((*spliced_it)->get_frequency() < t->get_frequency() && 
+				   ((*spliced_it)->get_frequency()/(double)t->get_frequency())*100 < diff_threshold){
+					(*spliced_it)->get_r_prev()->set_r_next((*spliced_it)->get_r_next());
+					(*spliced_it)->get_r_next()->set_r_prev((*spliced_it)->get_r_prev());
+					delete(*spliced_it);
+					s.erase(spliced_it++);
+				}else{
+					if((t->get_frequency()/(double)(*spliced_it)->get_frequency())*100 < diff_threshold){
+						new_s = false;
+						if(t->get_r_prev() == NULL){
+							(*it).second.p = t->get_r_next();
+						}else{
+							t->get_r_prev()->set_r_next(t->get_r_next());
+						}
+						if(t->get_r_next() == NULL){
+							t->get_r_prev()->set_r_next(NULL);
+						}else{
+							t->get_r_next()->set_r_prev(t->get_r_prev());
+						}
+					}
+					++spliced_it;
+				}
+			}else{
+				++spliced_it;
+			}
+		}
+		if(new_s){
+                	s.insert(t);
+			t = t->get_r_next();
+		}else{
+			table_entry* tmp = t;
+			delete(t);
+			t = tmp->get_r_next();
+		}
+            }//End_While*/
+	    if(s.size() == 1){
+		(*it).second.unspliced = true;
+	    }
+        }//End_If
+	s.clear();
+    }//End_For
+    std::cerr << "done!" << std::endl;
+    std::cerr << "Pruning took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
+    std::cerr << " seconds." << std::endl << std::endl;
+}
 
 /******************************/
 /* Read a fasta file          */
@@ -228,7 +360,11 @@ int read_fasta(char* file_name, tables &t){
             ::std::cerr << "Processing RNA-seq file...done!" << ::std::endl;
 	    std::cerr << "Loaded " << c << " sequences took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
             std::cerr << " seconds." << std::endl << std::endl;
-            fstrm.close();         
+            fstrm.close();
+	    //Reads pruning
+	    int max_mismatch = 1, diff_threshold = 20;
+	    pruning(t,max_mismatch, diff_threshold);
+        
         }else{
             ::std::cerr << "Unable to open file " << file_name << ::std::endl;
             return 1;
