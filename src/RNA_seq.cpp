@@ -1,3 +1,8 @@
+/********************************/
+/* Class the models the RNA-seq */
+/* sequence                     */
+/********************************/
+
 #include <string>
 #include <seqan/sequence.h>
 

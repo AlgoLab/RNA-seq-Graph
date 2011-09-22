@@ -1,3 +1,7 @@
+/********************************/
+/* Class the models the RNA-seq */
+/* sequence                     */
+/********************************/
 #ifndef RNA_SEQ_H
 #define RNA_SEQ_H
 

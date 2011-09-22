@@ -1,3 +1,7 @@
+/*******************************/
+/* Class that models the entry */
+/* of the hash table           */
+/*******************************/
 #ifndef TABLE_ENTRY_H
 #define TABLE_ENTRY_H
 

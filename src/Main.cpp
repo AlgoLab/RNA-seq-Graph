@@ -1,6 +1,9 @@
 #include "build_chains.h"
 #include "join_chains.h"
 
+/******************************/
+/* Print the advanced options */
+/******************************/
 void show_advanced(){
     ::std::cout << "\t --debug {1-8}" << ::std::endl;
     ::std::cout << "\t\t 1 - Print left hash table" << ::std::endl;
@@ -14,6 +17,9 @@ void show_advanced(){
     ::std::cout << ::std::endl;
 }
 
+/***************************/
+/* Print the usage options */
+/***************************/
 void show_usage(bool adv){
     ::std::cout << ::std::endl;
     ::std::cout << "Usage: build_RNA_seq_graph [options] --reads <RNA-seq_file>" << ::std::endl;
@@ -38,6 +44,9 @@ void show_usage(bool adv){
 }
 
 
+/****************/
+/* Program Main */
+/****************/
 int main(int argc, char* argv[]){
     if(argc < 2){
         show_usage(false);
@@ -59,6 +68,7 @@ int main(int argc, char* argv[]){
         return 1;
     }//End_If
 
+    //Read the options
     int debug = 0;
     int ref_level = 1;
     char* graphML_out_file = NULL;
@@ -84,7 +94,7 @@ int main(int argc, char* argv[]){
         show_usage(false);
         return 1;
     }
-    
+
     tables table;
     if(read_fasta(reads, table) == 0){
         map<unsigned long long, string> chains;

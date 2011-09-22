@@ -1,3 +1,7 @@
+/*******************************/
+/* Class that models the entry */
+/* of the hash table           */
+/*******************************/
 #include "table_entry.h"
 
 //Constructors
