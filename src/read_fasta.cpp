@@ -43,9 +43,13 @@ unsigned long long fingerprint(const string& seq){
     return number;
 }//End_Method
 
-/*********************************************/
-/* Parse Fasta Information                   */
-/*********************************************/
+/***********************************/
+/* Parse Fasta Information:        */
+/* Input-> DNA sequence            */
+/* Output-> table entry element    */
+/*                                 */
+/* Notes-> called by parse_fasta   */
+/***********************************/
 table_entry* build_entry(String<Dna5> seq){
     table_entry* el = NULL;
     string left_seq;
@@ -113,7 +117,12 @@ table_entry* parse_fasta(String<Dna5> seq, string meta){
 */
 
 /***************************************/
-/* Add entries in the "Hash Table"     */
+/* Add entries in the "Hash Table":    */
+/* Input-> hash table                  */
+/*      -> entry to be added           */
+/* Output-> entry added to the table   */
+/*                                     */
+/* Notes-> called by parse_fasta       */
 /***************************************/
 void add_entry(tables &t, table_entry* entry){
     hash_map::iterator it;
@@ -173,6 +182,10 @@ void add_entry(tables &t, table_entry* entry){
 /* errors                    */
 /*****************************/
 void pruning(tables &table, int max_mismatch, int diff_threshold){
+    //PROBLEMA:
+    //quando elimino un elemento da una lista (e quindi da una tabella)
+    //lo devo fare anche per l'altra lista (e quindi per l'altra tabella)
+    //!!!!!
     hash_map::iterator it;
     clock_t tStart = clock();
     std::cerr << "Pruning Reads...";
@@ -199,7 +212,7 @@ void pruning(tables &table, int max_mismatch, int diff_threshold){
 					delete(*spliced_it);
 					s.erase(spliced_it++);
 				}else{
-					if((t->get_frequency()/(double)(*spliced_it)->get_frequency())*100 < diff_threshold){
+					if((t->get_frequency()/(double)(*spliced_it)->get_frequency())*100 <diff_threshold){
 						new_s = false;
 						if(t->get_l_prev() == NULL){
 							(*it).second.p = t->get_l_next();
@@ -257,7 +270,7 @@ void pruning(tables &table, int max_mismatch, int diff_threshold){
 					delete(*spliced_it);
 					s.erase(spliced_it++);
 				}else{
-					if((t->get_frequency()/(double)(*spliced_it)->get_frequency())*100 < diff_threshold){
+					if((t->get_frequency()/(double)(*spliced_it)->get_frequency())*100 <diff_threshold){
 						new_s = false;
 						if(t->get_r_prev() == NULL){
 							(*it).second.p = t->get_r_next();
@@ -297,10 +310,13 @@ void pruning(tables &table, int max_mismatch, int diff_threshold){
 }
 
 /******************************/
-/* Read a fasta file          */
+/* Read a fasta file:         */
+/* Input-> RNA-seq file name  */
+/* Output-> Hash table        */
+/*                            */
+/* Notes-> called by the main */
 /******************************/
 int read_fasta(char* file_name, tables &t){
-    //Struct with hash tables
     string name = file_name;
     string extension = name.substr(name.find_last_of(".") + 1);
     if(extension == "fa" || extension == "fas" || extension == "fasta"){
