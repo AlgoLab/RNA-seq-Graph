@@ -377,9 +377,10 @@ int read_fasta(char* file_name, tables &t){
 	    std::cerr << "Loaded " << c << " sequences took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
             std::cerr << " seconds." << std::endl << std::endl;
             fstrm.close();
+
 	    //Reads pruning
-	    int max_mismatch = 1, diff_threshold = 20;
-	    pruning(t,max_mismatch, diff_threshold);
+	    //int max_mismatch = 1, diff_threshold = 20;
+	    //pruning(t,max_mismatch, diff_threshold);
         
         }else{
             ::std::cerr << "Unable to open file " << file_name << ::std::endl;
