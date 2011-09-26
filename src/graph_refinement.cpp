@@ -149,7 +149,7 @@ void tiny_blocks(::std::vector<table_entry*> & links, map<unsigned long long, st
     ::std::vector<small_frag> short_blocks;
     stack<unsigned int> s;
 
-    ::std::cerr << "Link size: " << links.size() << ::std::endl;
+    //::std::cerr << "Link size: " << links.size() << ::std::endl;
 
     for(unsigned int i=0; i<links.size(); ++i){
         for(unsigned int j=0; j<links.size(); ++j){
@@ -177,10 +177,10 @@ void tiny_blocks(::std::vector<table_entry*> & links, map<unsigned long long, st
                 }
             }
         }
-        ::std::cerr << i << " ";
+        //::std::cerr << i << " ";
     }
-    ::std::cerr << "Fine Primo Ciclo" << ::std::endl;
-    ::std::cerr << "Short Blocks (initial) size: " << short_blocks.size() << ::std::endl;
+    //::std::cerr << "Fine Primo Ciclo" << ::std::endl;
+    //::std::cerr << "Short Blocks (initial) size: " << short_blocks.size() << ::std::endl;
     for(unsigned int i=0; i<short_blocks.size(); ++i){
         bool sub_seq = false;
         for(unsigned int k=0; k<short_blocks.size(); ++k){
@@ -213,8 +213,8 @@ void tiny_blocks(::std::vector<table_entry*> & links, map<unsigned long long, st
         short_blocks.erase(short_blocks.begin()+s.top());
         s.pop();
     }
-    ::std::cerr << "Fine Secondo Ciclo" << ::std::endl;
-    ::std::cerr << "Short Blocks (final) size: " << short_blocks.size() << ::std::endl;
+    //::std::cerr << "Fine Secondo Ciclo" << ::std::endl;
+    //::std::cerr << "Short Blocks (final) size: " << short_blocks.size() << ::std::endl;
     for(unsigned int i=0; i<short_blocks.size(); ++i){//Start_For_1
         bool new_frag = true;
         Pattern<CharString, ShiftAnd> pattern(short_blocks[i].frag);

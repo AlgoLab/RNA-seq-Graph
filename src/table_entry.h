@@ -1,3 +1,7 @@
+/*******************************/
+/* Class that models the entry */
+/* of the hash table           */
+/*******************************/
 #ifndef TABLE_ENTRY_H
 #define TABLE_ENTRY_H
 
@@ -15,7 +19,7 @@ class table_entry{
     unsigned long long left_fingerprint;
     unsigned long long right_fingerprint;
     //Fragment Junction Offset
-    int junction_offset;
+    //int junction_offset;
     //Chain List
     table_entry* chain_next;
     table_entry* chain_prev;
@@ -28,9 +32,9 @@ class table_entry{
     vector<unsigned long long> A_delta;
     //Constructors
     table_entry(String<Dna5>, unsigned long long, unsigned long long);
-    table_entry(String<Dna5>, string, string, unsigned long long, unsigned long long);
-    table_entry(String<Dna5>, string, string, int, unsigned long long, unsigned long long);
-    table_entry(String<Dna5>, string, string, int, int, long, int, unsigned long long, unsigned long long);
+    //table_entry(String<Dna5>, string, string, unsigned long long, unsigned long long);
+    //table_entry(String<Dna5>, string, string, int, unsigned long long, unsigned long long);
+    //table_entry(String<Dna5>, string, string, int, int, long, int, unsigned long long, unsigned long long);
     ~table_entry();
 
     //Copy constructor
@@ -44,7 +48,7 @@ class table_entry{
     void set_r_prev(table_entry*);
     void set_left_fingerprint(unsigned long long);
     void set_right_fingerprint(unsigned long long);
-    void set_junction_offset(int);
+    //void set_junction_offset(int);
     void set_chain_next(table_entry*);
     void set_chain_prev(table_entry*);
 
@@ -56,7 +60,7 @@ class table_entry{
     table_entry* get_r_prev() const;
     unsigned long long get_left_fingerprint() const;
     unsigned long long get_right_fingerprint() const;
-    int get_junction_offset() const;
+    //int get_junction_offset() const;
     table_entry* get_chain_next() const;
     table_entry* get_chain_prev() const;
     long get_frequency() const;

@@ -8,6 +8,8 @@
 
 #include "join_chains.h"
 #include "build_chains.h"
+//Comment to disable GDL output
+#define GDL_OUT
 
 /******************************/
 /* Build and print the graph  */
@@ -16,17 +18,35 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
                  map<unsigned long long, unsigned long long> mapping, char* graphML_out_file){
     map<unsigned long long, string>::const_iterator ch_iter;
     map<unsigned long long, int> graph_nodes;
+    long node_id = 0;
+#ifdef GDL_OUT
+    //Alternative output
+    string out_file_name = "";
+    string gdl_file_name = "";
+    if(graphML_out_file == NULL){
+	out_file_name = "RNA-seq-graph.txt";
+	gdl_file_name = "RNA-seq-graph.gdl";
+    }else{
+	out_file_name = graphML_out_file;
+	out_file_name += ".txt";
+	gdl_file_name = graphML_out_file;
+	gdl_file_name += ".gdl";
+    }
+    //Out file
     ofstream out_file;
-    out_file.open("RNA-seq-graph.txt");
-    int node_id = 0;
-    //::std::cout << "graph: {" << ::std::endl;
-    //::std::cout << "\tnode.shape\t: circle" << ::std::endl;
-    //::std::cout << "\tnode.color\t: blue" << ::std::endl;
-    //::std::cout << "\tnode.height\t: 80" << ::std::endl;
-    //::std::cout << "\tnode.width\t: 80" << ::std::endl;
+    out_file.open(out_file_name.c_str());
+    //GDL file
+    ofstream gdl_file;
+    gdl_file.open(gdl_file_name.c_str());
+    //GDL header
+    gdl_file << "graph: {\n";
+    gdl_file << "\tnode.shape\t: circle\n";
+    //std::cout << "\tnode.color\t: blue\n";
+    gdl_file << "\tnode.height\t: 80\n";
+    gdl_file << "\tnode.width\t: 80\n";
+#endif
 
     //GraphML
-
     typedef boost::property<boost::vertex_name_t, int, 
         boost::property<boost::vertex_color_t, std::string> > VertexProperty;
 
@@ -35,55 +55,67 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
 
     std::vector<std::string> vertex_names;
     for(ch_iter = chains.begin(); ch_iter != chains.end(); ++ch_iter){
+	//Graphml nodes
         vertex_names.push_back(ch_iter->second);
         ++node_id;
         graph_nodes[ch_iter->first] = node_id;
-        
-        //GDL output
-        //::std::cout << "\t node: {" << ::std::endl;
-        //::std::cout << "\t\t title: \"" << node_id << "\"" << ::std::endl;
-        //::std::cout << "\t\t label: \"" << node_id << " - " << ch_iter->second.length() << "\"" << ::std::endl;
-        //::std::cout << "\t\t //" << ch_iter->second << ::std::endl;
-        //::std::cout << "\t}" << ::std::endl;
+#ifdef GDL_OUT        
+        //GDL nodes
+        gdl_file << "\t node: {\n";
+        gdl_file << "\t\t title: \"" << node_id << "\"\n";
+        gdl_file << "\t\t label: \"" << node_id << " - " << ch_iter->second.length() << "\"\n";
+        gdl_file << "\t\t //" << ch_iter->second << "\n";
+        gdl_file << "\t}\n";
         //File output
         out_file << "node#" << node_id << " " << ch_iter->second << "\n"; 
+#endif
     }
+
     //Graph Initialization
-    bool graph[node_id][node_id];
-    for(int i=0; i<node_id; ++i){
-        for(int j=0; j<node_id; ++j){
-            graph[i][j] = 0;
-        }
-    }
- 
+    //bool graph[node_id][node_id];
+    //for(long i=0; i<node_id; ++i){
+    //    for(long j=0; j<node_id; ++j){
+    //        graph[i][j] = 0;
+    //    }
+    //}
+
+    //Graphml graph
     Graph ug(node_id);
+
     //Adding edges
     int num_edges = 0;
     for(unsigned int i=0; i<links.size(); ++i){
-        //::std::cout << i << " " << links[i].seq << ::std::endl;
+        //std::cout << i << " " << links[i].seq << std::endl;
         for(int j=0; j<links[i]->size_D_link(); ++j){
-            //::std::cout << "j " << j << ::std::endl;
-            //::std::cout << links[i].D_delta[j] << ::std::endl;
+            //std::cout << "j " << j << std::endl;
+            //std::cout << links[i].D_delta[j] << std::endl;
             for(int k=0; k<links[i]->size_A_link(); ++k){
                 if(graph_nodes.find(mapping[links[i]->at_D_link(j)]) != graph_nodes.end() &&
                    graph_nodes.find(mapping[links[i]->at_A_link(k)]) != graph_nodes.end()){
-                    if(graph_nodes[mapping[links[i]->at_D_link(j)]] != graph_nodes[mapping[links[i]->at_A_link(k)]] && 
-                       graph[graph_nodes[mapping[links[i]->at_D_link(j)]]-1][graph_nodes[mapping[links[i]->at_A_link(k)]]-1] == 0){
-                        //::std::cout << "k " << k << ::std::endl;
-                        //::std::cout << links[i].A_delta[k] << ::std::endl;
-                        graph[graph_nodes[mapping[links[i]->at_D_link(j)]]-1][graph_nodes[mapping[links[i]->at_A_link(k)]]-1] = 1;
+                    if(graph_nodes[mapping[links[i]->at_D_link(j)]] != graph_nodes[mapping[links[i]->at_A_link(k)]]){
+// && 
+//                      graph[graph_nodes[mapping[links[i]->at_D_link(j)]]-1][graph_nodes[mapping[links[i]->at_A_link(k)]]-1] == 0){
+                        //std::cout << "k " << k << std::endl;
+                        //std::cout << links[i].A_delta[k] << std::endl;
+                        //graph[graph_nodes[mapping[links[i]->at_D_link(j)]]-1][graph_nodes[mapping[links[i]->at_A_link(k)]]-1] = 1;
+			#ifdef GDL_OUT
                         //GDL output
-                        //::std::cout << "\t edge: {" << ::std::endl;
-                        //::std::cout << "\t\t source: \"" << graph_nodes[mapping[links[i]->at_D_link(j)]] << "\"" << ::std::endl;
-                        //::std::cout << "\t\t target: \"" << graph_nodes[mapping[links[i]->at_A_link(k)]] << "\"" << ::std::endl;
-                        //::std::cout << "\t}" << ::std::endl;
-                        //File output
+                        gdl_file << "\t edge: {\n";
+                        gdl_file << "\t\t source: \"" << graph_nodes[mapping[links[i]->at_D_link(j)]] << "\"\n";
+                        gdl_file << "\t\t target: \"" << graph_nodes[mapping[links[i]->at_A_link(k)]] << "\"\n";
+                        gdl_file << "\t}\n";
+			#endif
+                        
                         num_edges++;
                         int source = graph_nodes[mapping[links[i]->at_D_link(j)]];
                         int target = graph_nodes[mapping[links[i]->at_A_link(k)]];
+			#ifdef GDL_OUT
+			//File output
                         out_file << "edge#" << num_edges << " ";
                         out_file << graph_nodes[mapping[links[i]->at_D_link(j)]] << ";";
                         out_file << graph_nodes[mapping[links[i]->at_A_link(k)]] << "\n";
+			#endif
+			//Graphml arcs
                         ::boost::add_edge(source-1,target-1,ug);
                     }
                 }
@@ -91,6 +123,11 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
         }//End_For
     }//End_For
 
+    //GDL end
+#ifdef GDL_OUT
+    gdl_file << "}";
+#endif
+    //Graphml export
     ::boost::dynamic_properties dp;
     ::boost::graph_traits<Graph>::vertex_iterator v, v_end;
     
@@ -112,8 +149,10 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
         out_stream.open(graphML_out_file);
         ::boost::write_graphml(out_stream, ug, dp, true);
     }
-    //::std::cout << "}" << ::std::endl;
+#ifdef GDL_OUT    
     out_file.close();
+    gdl_file.close();
+#endif
 }//End_Method
 
 /**********************************/
@@ -127,7 +166,7 @@ int get_left_linked_read(string chain, tables& table, int delta){
     //Try to join and cut the chain on the right
     while(q <= delta){
         ::seqan::assign(r_t,::seqan::infix(chain,::seqan::length(chain)-2*delta+q,::seqan::length(chain)-delta+q));
-        //::std::cout << r_t << ::std::endl;
+        //std::cout << r_t << std::endl;
         hash_map::iterator l_it = table.left_map.find(fingerprint(r_t));
         if(l_it != table.left_map.end()){
             if((*l_it).second.half_spliced){
@@ -243,7 +282,7 @@ int get_right_linked_read(string chain, tables& table, int delta){
 /*************************************/
 /* Merge chains looking from the end */
 /*************************************/
-::std::map<unsigned long long, unsigned long long> chain_back_merging(map<unsigned long long, string>& chains, int len){
+std::map<unsigned long long, unsigned long long> chain_back_merging(map<unsigned long long, string>& chains, int len){
     ::std::map<unsigned long long, unsigned long long> mapping;
     ::std::multimap<unsigned long long, unsigned long long> new_chains;
     ::std::map<unsigned long long, string>::iterator chain_it;
@@ -313,13 +352,23 @@ int get_right_linked_read(string chain, tables& table, int delta){
 /***************************************/
 /* Merge chains looking for substrings */
 /***************************************/
-::std::map<unsigned long long, unsigned long long> chains_unify(map<unsigned long long, string>& chains, unsigned int len){
-    ::std::map<unsigned long long, string>::iterator chain_it;
-    ::std::map<unsigned long long, string>::iterator chain_it2;
-    ::std::map<unsigned long long, unsigned long long> mapping;
+std::map<unsigned long long, unsigned long long> chains_unify(map<unsigned long long, string>& chains, unsigned int len){
+    std::map<unsigned long long, string>::iterator chain_it;
+    std::map<unsigned long long, string>::iterator chain_it2;
+    std::map<unsigned long long, unsigned long long> mapping;
     queue<unsigned long long> q;
+    unsigned int count = 0;
+    unsigned int perc = 0;
+    std::cerr << std::endl;
     for(chain_it = chains.begin(); chain_it != chains.end(); ++chain_it){
         int max_ch_len = 0;
+	++count;
+	if((count/(double)chains.size())*100 -1 >= perc){
+		perc++;
+		if(perc%10 == 0){
+                	std::cerr << "Processed: " << perc << "%" << std::endl;
+                }
+	}
         mapping[chain_it->first] = chain_it->first;
         if(chain_it->second.length() > len){
             CharString p = chain_it->second;
@@ -352,22 +401,23 @@ int get_right_linked_read(string chain, tables& table, int delta){
 /* during the link phase are nodes */
 /* too                             */
 /***********************************/
-void check_cutted_frags(CharString frag, ::std::vector<table_entry*> &links, 
+void check_cutted_frags(CharString frag, std::vector<table_entry*> &links, 
                         map<unsigned long long, string> &chains, unsigned int min_length){
-    if(length(frag)>min_length){
-        ::std::queue<int> l_link;
-        ::std::queue<int> r_link;
+    if(length(frag) > min_length){
+	
+        std::queue<int> l_link;
+        std::queue<int> r_link;
         Pattern<CharString, ShiftOr > pattern(frag);
         for(unsigned int i=0; i<links.size(); ++i){
             CharString text = links[i]->get_short_read()->get_RNA_seq_sequence();
             Finder<CharString> finder(text);
             find(finder,pattern);
             if(beginPosition(finder) < min_length){
-                //::std::cout << "L link " << i << ::std::endl;
+                //std::cout << "L link " << i << ::std::endl;
                 l_link.push(i);
             }
             if(endPosition(finder) > length(text) - min_length){
-                //::std::cout << "R link" << ::std::endl;
+                //std::cout << "R link" << ::std::endl;
                 r_link.push(i);
             }
         }
@@ -378,8 +428,14 @@ void check_cutted_frags(CharString frag, ::std::vector<table_entry*> &links,
             for(unsigned int z=0; z<min_length*2 - length(frag);++z){
                 head.append("A");
             }
-            chains[fingerprint(head)] = toCString(frag);
-            
+	    if(chains.find(fingerprint(head)) == chains.end()){
+            	chains[fingerprint(head)] = toCString(frag);
+		//std::cerr << "CUT: " << frag << " " << length(frag) << std::endl;
+	    }else{
+		//std::cerr << "Problem:" << std::endl;
+		//std::cerr << chains[fingerprint(head)] << std::endl;
+		//std::cerr << toCString(frag) << std::endl;
+	    }            
             //::std::cout << toCString(frag) << ::std::endl;
             while(!l_link.empty()){
                 links[l_link.front()]->push_D_link(fingerprint(head));
@@ -504,95 +560,120 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
             }//End_If
         }//End_If
     }//End_For
-
+    //std::cerr << "Size: " << chains.size() << std::endl;
     //Look for linking RNA-seqs
     map<unsigned long long, string>::iterator chain_it;
     //Come prova impostiamo delta a 1/2 della lunghezza dei read
-    int delta = len/2;
+    unsigned int delta = len/2;
     string new_chain;
+    //int c = 0;
     ::std::cerr << "Linking Chains...";
+    clock_t tStart = clock();
     for(chain_it = chains.begin(); chain_it != chains.end(); ++chain_it){
-        //::std::cout << "Left" << ::std::endl;
+	if(chain_it->second.length() < delta){
+		continue;
+	//	std::cerr << "CHB: " << chain_it->second << " " << chain_it->second.length() << std::endl;
+	}
+        //std::cerr << "Left " << ++c << std::endl;
         int right_cut = get_left_linked_read(chain_it->second, table, delta);
-        //::std::cout << "Right" << ::std::endl;
+        //std::cerr << "Right " << c << std::endl;
         int left_cut = get_right_linked_read(chain_it->second, table, delta);
-        //::std::cout << left_cut << " " << right_cut << ::std::endl;
+        //std::cerr << left_cut << " " << right_cut << ::std::endl;
+	//std::cerr << chain_it->second << ::std::endl;
         assign(new_chain,::seqan::infix(chain_it->second,left_cut,chain_it->second.length()-right_cut));
-        //::std::cout << chain_it->second << ::std::endl;
-        //::std::cout << new_chain << ::std::endl << ::std::endl;
+        
+        //std::cerr << new_chain << ::std::endl << ::std::endl;
 
         check_cutted_frags(::seqan::prefix(chain_it->second,left_cut),linking_reads,chains,delta/2);
         check_cutted_frags(::seqan::suffix(chain_it->second,chain_it->second.length()-right_cut),linking_reads,chains,delta/2);
         //::std::cout << "Pre " << ::seqan::prefix(chain_it->second,left_cut) << ::std::endl;
         //::std::cout << "Suf " << ::seqan::suffix(chain_it->second,chain_it->second.length()-right_cut) << ::std::endl;
-        chain_it->second = new_chain;
+	//if(new_chain.length() < delta){
+	//	std::cerr << "ORG: " << chain_it->second << " " << chain_it->second.length() << std::endl;
+	//	std::cerr << "NEW: " << new_chain << " " << new_chain.length() << std::endl;
+	//}
+        chain_it->second = new_chain;	
         //::std::cout << "Fine catena" << ::std::endl;
     }//End_For
-    ::std::cerr << "done!" << ::std::endl;
+    std::cerr << "done!" << ::std::endl;
+    std::cerr << "Linking graph nodes took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
+    std::cerr << " seconds." << std::endl << std::endl;
     //print_merged_chains(chains);
-    ::std::cerr << "Merging Chains...";
-    ::std::map<unsigned long long, unsigned long long> mapping = chains_unify(chains,delta/2);
-    ::std::cerr << "done!" << ::std::endl;
+  #define MERGING
+  #ifdef MERGING
+    std::cerr << "Merging " << chains.size() << " Graph Nodes...";
+    tStart = clock();
+    std::map<unsigned long long, unsigned long long> mapping = chains_unify(chains,delta/2);
+    std::cerr << "Merging Graph Nodes...done!" << std::endl;
+    std::cerr << "Merging graph nodes took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
+    std::cerr << " seconds." << std::endl << std::endl;
     //print_merged_chains(chains);
     //::std::map<unsigned long long, unsigned long long> mapping = chain_back_merging(chains,delta);
-
+  #else
+    std::map<unsigned long long, unsigned long long> mapping;
+    std::map<unsigned long long, string>::iterator ch_it;
+    for(ch_it = chains.begin(); ch_it != chains.end(); ++ch_it){
+	mapping[ch_it->first] = ch_it->first;
+    }
+  #endif
     switch(ref_level){
     case 1:
-        ::std::cerr << "Standard Algorithm...done!" << ::std::endl;
+        std::cerr << "Standard Algorithm...done!" << std::endl;
         break;
     case 2:
-        ::std::cerr << "Graph Refinement..." << ::std::endl;
-        ::std::cerr << "Step 1...";
+        std::cerr << "Graph Refinement..." << std::endl;
+        std::cerr << "Step 1...";
         tiny_blocks(linking_reads,chains,delta,mapping);
-        ::std::cerr << "done!" << ::std::endl;
-        ::std::cerr << "Graph Refinement...done!" << ::std::endl;
+        std::cerr << "done!" << std::endl;
+        std::cerr << "Graph Refinement...done!" << std::endl;
         break;
     case 3:
-        ::std::cerr << "Graph Refinement..." << ::std::endl;
-        ::std::cerr << "Step 1...";
+        std::cerr << "Graph Refinement..." << std::endl;
+        std::cerr << "Step 1...";
         tiny_blocks(linking_reads,chains,delta,mapping);
-        ::std::cerr << "done!" << ::std::endl;
-        ::std::cerr << "Step 2...";
+        std::cerr << "done!" << std::endl;
+        std::cerr << "Step 2...";
         add_linking_reads(linking_reads,chains,delta/2);
-        ::std::cerr << "done!" << ::std::endl;
-        ::std::cerr << "Graph Refinement...done!" << ::std::endl;
+        std::cerr << "done!" << std::endl;
+        std::cerr << "Graph Refinement...done!" << ::std::endl;
         break;
     case 4:
-        ::std::cerr << "Graph Refinement..." << ::std::endl;
-        ::std::cerr << "Step 1...";
+        std::cerr << "Graph Refinement..." << std::endl;
+        std::cerr << "Step 1...";
         tiny_blocks(linking_reads,chains,delta,mapping);
-        ::std::cerr << "done!" << ::std::endl;
-        ::std::cerr << "Step 2...";
+        std::cerr << "done!" << std::endl;
+        std::cerr << "Step 2...";
         add_linking_reads(linking_reads,chains,delta/2);
-        ::std::cerr << "done!" << ::std::endl;
-        ::std::cerr << "Step 3...";
+        std::cerr << "done!" << std::endl;
+        std::cerr << "Step 3...";
         small_blocks(linking_reads,chains,delta,mapping);
-        ::std::cerr << "done!" << ::std::endl;
-        ::std::cerr << "Graph Refinement...done!" << ::std::endl;
+        std::cerr << "done!" << std::endl;
+        std::cerr << "Graph Refinement...done!" << std::endl;
         break;
     case 5:
-        ::std::cerr << "Graph Refinement..." << ::std::endl;
-        ::std::cerr << "Step 1...";
+        std::cerr << "Graph Refinement..." << std::endl;
+        std::cerr << "Step 1...";
         tiny_blocks(linking_reads,chains,delta,mapping);
-        ::std::cerr << "done!" << ::std::endl;
-        ::std::cerr << "Step 2...";
+        std::cerr << "done!" << std::endl;
+        std::cerr << "Step 2...";
         add_linking_reads(linking_reads,chains,delta/2);
-        ::std::cerr << "done!" << ::std::endl;
-        ::std::cerr << "Step 3...";
+        std::cerr << "done!" << std::endl;
+        std::cerr << "Step 3...";
         small_blocks(linking_reads,chains,delta,mapping);
-        ::std::cerr << "done!" << ::std::endl;
-        ::std::cerr << "Step 4...";
+        std::cerr << "done!" << std::endl;
+        std::cerr << "Step 4...";
         check_overlapping_nodes(linking_reads,chains,delta,mapping,5,95);
-        ::std::cerr << "done!" << ::std::endl;
-        ::std::cerr << "Graph Refinement...done!" << ::std::endl;
+        std::cerr << "done!" << std::endl;
+        std::cerr << "Graph Refinement...done!" << std::endl;
         break;
     default:
-        ::std::cerr << "Wrong Refinement Option..." << ::std::endl;
-        ::std::cerr << "No refinement preformed!" << ::std::endl;
+        std::cerr << "Wrong Refinement Option..." << std::endl;
+        std::cerr << "No refinement preformed!" << std::endl;
     }
-    
+
+    //std::cerr << "Exporting Output...";
     //linking_refinement(linking_reads,chains,delta,mapping);
     print_graph(linking_reads,chains, mapping, out_file);
-    
+    //std::cerr << "done!" << std::endl;
 }//End_Method
 

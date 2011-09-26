@@ -33,6 +33,9 @@ unsigned long long fingerprint(const string&);
 //Parse Fasta Information
 table_entry* parse_fasta(String<Dna5>, string);
 
+//Build table_entry
+table_entry* build_entry(String<Dna5>);
+
 //Add entries in the Hash Table
 void add_entry(hash_map &, table_entry*, char);
 
