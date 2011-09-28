@@ -4,7 +4,7 @@ SRC_DIR:=src
 OBJ_DIR:=obj
 BIN_DIR:=bin
 
-CFLAGS+= -g -Wall -O2 -DNDEBUG -march=native -Wno-deprecated
+CFLAGS+= -g -Wall -O2 -UNDEBUG -march=native -Wno-deprecated
 CXXFLAGS+= ${CFLAGS}
 LIBS = -l boost_graph
 

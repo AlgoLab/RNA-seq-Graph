@@ -227,11 +227,14 @@ void build_unspliced_chains(tables &table){
     for(it = table.left_map.begin(); it != table.left_map.end(); ++it){
         if((*it).second.unspliced && table.right_map[(*it).second.p->get_right_fingerprint()].unspliced){
             table_entry* t = (*it).second.p;
+	    
             if(table.left_map.find(t->get_right_fingerprint()) != table.left_map.end()){
                 if(table.left_map[t->get_right_fingerprint()].unspliced && 
                    table.right_map[table.left_map[t->get_right_fingerprint()].p->get_right_fingerprint()].unspliced &&
                    table.left_map[t->get_right_fingerprint()].p->get_chain_prev() == NULL){
                     table_entry* t_temp = table.left_map[t->get_right_fingerprint()].p;
+		    //std::cout << t->get_short_read()->get_RNA_seq_sequence() << std::endl;
+		    //std::cout << t_temp->get_short_read()->get_RNA_seq_sequence() << std::endl;
                     t->set_chain_next(t_temp);
                     t_temp->set_chain_prev(t);
                 }
@@ -283,6 +286,8 @@ void print_unspliced_chains(const tables &table){
     std::cerr << "Printing Chains with Half Overlap...";
     for(it=table.left_map.begin(); it != table.left_map.end(); it++){
         table_entry* t = (*it).second.p;
+	//std::cout << t->get_short_read()->get_RNA_seq_sequence() << std::endl;
+        
         if((*it).second.unspliced  && 
            table.right_map.find((*it).second.p->get_right_fingerprint())->second.unspliced && 
            t->get_chain_prev() == NULL){
