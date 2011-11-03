@@ -27,7 +27,9 @@ of the variants of alternative splicing of the gene structure.
 by [Stefano Beretta](http://bimib.disco.unimib.it/index.php/Beretta_Stefano)
 
 
-Current release: **1.0.0** (May 19, 2011)
+Current release: **2.0.0** (November 3, 2011)
+
+Direct download: [zip](https://github.com/AlgoLab/RNA-seq-Graph/zipball/v2.0.0) - [tar.gz](https://github.com/AlgoLab/RNA-seq-Graph/tarball/v2.0.0)
 
 
 ------------------------------------------------------------------------
@@ -64,6 +66,9 @@ It is also possible to clone the entire repository using the following
 command:
 
     $ git clone git://github.com/AlgoLab/RNA-seq-Graph.git
+
+The source code is available directly in [zip](https://github.com/AlgoLab/RNA-seq-Graph/zipball/v2.0.0) 
+or [tar.gz](https://github.com/AlgoLab/RNA-seq-Graph/tarball/v2.0.0)
     
 Or, if you have a GitHub account, you can fork the project from the
 [repository web page](https://github.com/AlgoLab/RNA-seq-Graph).
@@ -81,33 +86,71 @@ prompt:
 
 The program takes as input a FASTA file with the RNA-seq data of a gene
 and returns the RNA-seq Graph. (The file formats are described below.)
-To program is executed by typing the following command:
+The program is executed by typing the following command:
 
-    $ ./bin/build_RNA_seq_graph <fasta_file> <option 1...9>
+    $ ./bin/build_RNA_seq_graph [options] --reads <RNA-seq_file>
 
 where the possible options are:
 
-`1` - Print left hash table
+    --ref_level {1-5}
 
-`2` - Print right hash table
+ `1` - Standard Algorithm (Default option)
 
-`3` - Print unspliced RNA-seq sequences
+ `2` - Add tiny blocks
 
-`4` - Print spliced RNA-seq sequences
+ `3` - Add linking edges
 
-`5` - Print perfectly spliced RNA-seq sequences
+ `4` - Add small blocks
 
-`6` - Build chains of unspliced reads with half sequence overlap
+ `5` - Refine overlapping nodes
 
-`7` - Build chains of unspliced reads with specific overlap
+    -o <graphML_out_file> (Default: std output)
 
-`8` - Merge chains built of unspliced reads with half sequence overlap
+    --advanced (For debug)
 
-`9` - Build the RNA-seq Graph
+    --help (Print this screen)
+
+Alternatively it is possible to view the debug options by typing:
+
+    $ ./bin/build_RNA_seq_graph --advanced
+
+that prints the following options:
+
+    --ref_level {1-5}
+
+ `1` - Standard Algorithm (Default option)  
+
+ `2` - Add tiny blocks  
+
+ `3` - Add linking edges  
+
+ `4` - Add small blocks  
+
+ `5` - Refine overlapping nodes  
+
+    -o <graphML_out_file> (Default: std output)
+
+    --debug {1...8}
+
+ `1` - Print left hash table  
+
+ `2` - Print right hash table  
+
+ `3` - Print unspliced RNA-seq sequences  
+
+ `4` - Print spliced RNA-seq sequences
+
+ `5` - Print half spliced RNA-seq sequences
+
+ `6` - Build chains of unspliced reads with half sequence overlap
+
+ `7` - Build chains of unspliced reads with specific overlap
+
+ `8` - Merge chains built of unspliced reads with half sequence overlap
 
 An example of usage is:
 
-    $ ./bin/build_RNA_seq_graph Raw_file.fa 9
+    $ ./bin/build_RNA_seq_graph --reads Raw_file.fa -o Out_file
 
 A summary of the available program options can be printed by invoking
 `./bin/build_RNA_seq_graph` without parameters.
@@ -128,13 +171,21 @@ sequence. For example:
 
 ### Output: RNA-seq Graph ###
 
-The program produces as output a file _RNA-seq-graph.txt_ that contains
-a list of nodes and arcs of the RNA-seq graph. It also gives on the
-standard output the same graph in GDL format (<http://www.absint.com/aisee/manual/windows/node58.html>).
-This latter can be redirected into a file in order to visualize or export it in another format.
+The program produces as output a file in _txt_ format that contains
+a list of nodes and arcs of the RNA-seq graph. It also gives as output 
+the same graph in _GDL_ format (<http://www.absint.com/aisee/manual/windows/node58.html>).
+It also print on standard output the graph in GraphML format; this latter can be 
+redirected into a file in order to visualize or export it.
+By default the files are _RNA-seq-graph.txt_ and _RNA-seq-graph.gdl_ .
 For exmaple:
 
-    $ ./bin/build_RNA_seq_graph Raw_file.fa 9 > RNA-seq-graph.gdl
+    $ ./bin/build_RNA_seq_graph --reads Raw_file.fa > RNA-seq-graph.graphml
+
+If the option `-o` is specified the 3 files will have the specified name:
+
+    $ ./bin/build_RNA_seq_graph --reads Raw_file.fa -o Out-file
+
+generates _Out-file.txt_, _Out-file.gdl_ and _Out-file.graphml_.
 
 ## License ##
 
