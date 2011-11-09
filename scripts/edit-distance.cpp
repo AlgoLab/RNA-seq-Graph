@@ -162,7 +162,7 @@ int main(int argc, char* argv[]){
                     if(ref_map.find(fing) == ref_map.end()){
                         ref_map[fing] = make_pair(prev,next);
                     }
-                    std::cout << prev << " " << next << std::endl;
+                    //std::cout << prev << " " << next << std::endl;
                 }
             }else{
                 for(int i=0; i<argc-3; ++i){
