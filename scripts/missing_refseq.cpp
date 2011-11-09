@@ -87,7 +87,7 @@ int main(int argc, char* argv[]){
     std::ofstream out_file;
     out_file.open("MISSING_REFSEQ.fa");
     //Keep also 2 strings: the one preceding and the one following the extrected one
-    std::map<unsigned long long, pair<string, bool> > ref_map;
+    std::map<unsigned long long, pair<pair<string,int>, bool> > ref_map;
 
     if(data_file.is_open() && ref.is_open()){        
         
@@ -129,7 +129,7 @@ int main(int argc, char* argv[]){
                     assign(read,infix(read_seq,i,i+READ_LEN));
                     unsigned long long fing = fingerprint(read.substr(0,READ_LEN/2));
                     if(ref_map.find(fing) == ref_map.end()){
-                        ref_map[fing] = make_pair(read,false);
+                        ref_map[fing] = make_pair(make_pair(read,sp_g),false);
                     }else{
                         std::cerr << "DUPLICATO" << std::endl;
                     }
@@ -147,7 +147,7 @@ int main(int argc, char* argv[]){
                         assign(read,infix(read_seq,i,i+READ_LEN));
                         unsigned long long fing = fingerprint(read.substr(0,READ_LEN/2));
                         if(ref_map.find(fing) == ref_map.end()){
-                            ref_map[fing] = make_pair(read,false);
+                            ref_map[fing] = make_pair(make_pair(read,sp_g),false);
                         }else{
                             std::cerr << "DUPLICATO" << std::endl;
                         }
@@ -199,11 +199,11 @@ int main(int argc, char* argv[]){
             std::cerr << "Processing took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
             std::cerr << " seconds." << std::endl;
         }
-        std::map<unsigned long long, pair<string, bool> >::iterator it;
+        std::map<unsigned long long, pair<pair<string,int>, bool> >::iterator it;
         for(it = ref_map.begin(); it != ref_map.end(); ++it){
             if(!it->second.second){
-                out_file << ">REFSEQ" << std::endl;
-                out_file << it->second.first << std::endl;
+                out_file << ">REFSEQ-" << genes[it->second.first.second] << std::endl;
+                out_file << it->second.first.first << std::endl;
             }
         }
         data_file.close();
