@@ -85,7 +85,7 @@ int main(int argc, char* argv[]){
     long file_dimension_2 = 0;
     //Files
     ifstream f(argv[1],::std::ios_base::in|::std::ios_base::binary|ios::ate);
-    ifstream f_2("RNA_SEQ_NEW.fa",::std::ios_base::in|::std::ios_base::binary|ios::ate);
+    ifstream f_2("RNASEQ_NEW.fa",::std::ios_base::in|::std::ios_base::binary|ios::ate);
 
     if(f.is_open() && f_2.is_open()){
         file_dimension = f.tellg();
@@ -94,17 +94,17 @@ int main(int argc, char* argv[]){
         f_2.close();
     }
     else{
-        std::cerr << "Unable to open file " << argv[1] << " or RNA_SEQ_NEW.fa" << std::endl;
+        std::cerr << "Unable to open file " << argv[1] << " or RNASEQ_NEW.fa" << std::endl;
         return 1;	
     }
     long read_size = 0;
     int perc = 0;
     std::fstream data_file;
-    data_file.open("RNA_SEQ_NEW.fa", std::ios::in | std::ios_base::binary);
+    data_file.open("RNASEQ_NEW.fa", std::ios::in | std::ios_base::binary);
     std::fstream ref;
     ref.open(argv[1], std::ios_base::in | std::ios_base::binary);
     std::ofstream out_file;
-    out_file.open("RNA_SEQ_REFINED.fa");
+    out_file.open("RNASEQ_REFINED.fa");
     //Keep also 2 strings: the one preceding and the one following the extrected one
     std::map<unsigned long long, pair<string,string> > ref_map;
 
@@ -134,16 +134,44 @@ int main(int argc, char* argv[]){
                     std::cerr << "Processed: " << perc << "%" << std::endl;
                 }
             }
-            if(read_tag.find("NM_")!=string::npos){
-                int sp_g = -1;
-                if(!exp_genes){
-                    //Find gene name
-                    size_t pos_s = read_tag.find_last_of("(");
-                    size_t pos_f = read_tag.find_last_of(")");
-                    genes.push_back(read_tag.substr(pos_s+1,pos_f-pos_s-1));
-                    sp_g = genes.size() -1;
-                    //std::cout << read_tag.substr(pos_s+1,pos_f-pos_s-1) << std::endl;
-                    for(unsigned int i = 0;i<=length(read_seq)-READ_LEN/4;i++){
+
+            int sp_g = -1;
+            if(!exp_genes){
+                //Find gene name
+                size_t pos_g = read_tag.find(" ");
+                genes.push_back(read_tag.substr(0,pos_g));
+                sp_g = genes.size() -1;
+                //std::cout << read_tag.substr(pos_s+1,pos_f-pos_s-1) << std::endl;
+                for(unsigned int i = 0;i<=length(read_seq)-READ_LEN/4;i++){
+                    num_fing++;
+                    string read;
+                    assign(read,infix(read_seq,i,i+READ_LEN/4));
+                    unsigned long long fing = fingerprint(read);
+                    string prev;
+                    if(i<READ_LEN/4){
+                        prev = "";
+                    }else{
+                        assign(prev,infix(read_seq,i-READ_LEN/4,i));
+                    }
+                    string next;
+                    if(i>length(read_seq)-READ_LEN/2){
+                        next = "";
+                    }else{
+                        assign(next,infix(read_seq,i+READ_LEN/4,i+READ_LEN/2));
+                    }
+                    if(ref_map.find(fing) == ref_map.end()){
+                        ref_map[fing] = make_pair(prev,next);
+                    }
+                    std::cout << prev << " " << next << std::endl;
+                }
+            }else{
+                for(int i=0; i<argc-3; ++i){
+                    if(read_tag.find(genes[i]) != string::npos){
+                        sp_g = i;
+                    }
+                }
+                if(sp_g != -1){
+                    for(unsigned int i = 0;i<=length(read_seq)-READ_LEN/2;i++){
                         num_fing++;
                         string read;
                         assign(read,infix(read_seq,i,i+READ_LEN/4));
@@ -162,36 +190,6 @@ int main(int argc, char* argv[]){
                         }
                         if(ref_map.find(fing) == ref_map.end()){
                             ref_map[fing] = make_pair(prev,next);
-                        }
-                        std::cout << prev << " " << next << std::endl;
-                    }
-                }else{
-                    for(int i=0; i<argc-3; ++i){
-                        if(read_tag.find("("+genes[i]+")") != string::npos){
-                            sp_g = i;
-                        }
-                    }
-                    if(sp_g != -1){
-                        for(unsigned int i = 0;i<=length(read_seq)-READ_LEN/2;i++){
-                            num_fing++;
-                            string read;
-                            assign(read,infix(read_seq,i,i+READ_LEN/4));
-                            unsigned long long fing = fingerprint(read);
-                            string prev;
-                            if(i<READ_LEN/4){
-                                prev = "";
-                            }else{
-                                assign(prev,infix(read_seq,i-READ_LEN/4,i));
-                            }
-                            string next;
-                            if(i>length(read_seq)-READ_LEN/2){
-                                next = "";
-                            }else{
-                                assign(next,infix(read_seq,i+READ_LEN/4,i+READ_LEN/2));
-                            }
-                            if(ref_map.find(fing) == ref_map.end()){
-                                ref_map[fing] = make_pair(prev,next);
-                            }
                         }
                     }
                 }

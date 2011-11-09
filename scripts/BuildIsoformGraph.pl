@@ -3,6 +3,7 @@
 ####
 #
 # Script che produce il grafo delle isoforme (STDOUT) dal file GTF dei trascritti (STDIN) dal file
+# Attenzione: nel gtf deve essere presente un solo gene! La genomica in input deve sempre essere sullo strand +
 #
 ####
 
@@ -18,21 +19,26 @@ my $gen_file;
 my $outIsoformFile;
 my $outIsoformFileRegions;
 my $outIsoformFileGDL;
+my $min_length;
+my $force_strand;
 
 GetOptions (
 			'contract-path=i' => \$contract_path,
+			'min-length=i' => \$min_length,
 			'working-dir=s' => \$wdir,
             'gtf=s' => \$gtfFile,
             'genomic=s' => \$gen_file, 
             'isoforms=s' => \$outIsoformFile,
             'isoforms-regions=s' => \$outIsoformFileRegions,
-            'isoforms-gdl=s' => \$outIsoformFileGDL,            
+            'isoforms-gdl=s' => \$outIsoformFileGDL,       
+            'force-on-plus-strand=i' => \$force_strand,
             'debug' => \$debug,
            );
 my $usage="Usage: perl BuildIsoformGraph.pl [options]
  --contract-path= <integer> (mandatory) type of path contraction
- 							(0=regions; 1=chunks; 2=RNA-read-like chunks)
- 								(default: 1)
+ 							(0=codingregions; 1=blocks; 2=RNA-seq-graph-like)
+ --min-length= <integer> (optional) minimum length for retaining a node (only for type of path contraction = 2)
+ 							    (default: 0)
  --working-dir=<file>		 (optional) path of the working directory
  								(default: ./)
  --gtf= <file>          	(optional) name of the input GTF file
@@ -45,6 +51,9 @@ my $usage="Usage: perl BuildIsoformGraph.pl [options]
  								(default: isoform-graph-regions.txt)
  --isoforms-gdl= <file>  	(optional) name of the output Isoform Graph file in GDL format
  								(default: isoform-graph.gdl)
+ --force-on-plus-strand= <integer>  (optional) flag for forcing the isoform graph on plus strand
+ 								(1: the graph is given on plus strand; 0: the graph is given on the gene strand)
+ 								(default: 0)
  --debug                     emits debugging information
 ";
 
@@ -70,6 +79,12 @@ $outIsoformFileGDL="isoform-graph.gdl" if (not defined $outIsoformFileGDL or $ou
 print "Output GDL isoform graph file: ", $outIsoformFileGDL, "\n";
 
 print "Path contraction: ", $contract_path, "\n";
+$min_length=0 if (not defined $min_length or $min_length < 0);
+if($contract_path == 2){
+	print "Nodes of length < $min_length will be discarded!\n";
+}
+
+$force_strand=0 if (not defined $force_strand or ($force_strand != 0 and $force_strand != 1));
 
 $gtfFile=$wdir."/".$gtfFile;
 $gen_file=$wdir."/".$gen_file;
@@ -104,13 +119,32 @@ while(<GTF>){
 	chomp;
 	my @record_list=split(/\s/, $_);
 	
+	#print $record_list[2], "\n";
+	#exit;
+	
 	if($record_list[2] eq "exon"){
+		my $transcript_id_in_record=-1;
+		my $k=0;
+		my $found=0;
+		while($k <= $#record_list && $found == 0){
+			if($record_list[$k] eq "transcript_id"){
+				$found=1;
+			}
+			$k++;
+		}
+		if($found == 0 || $k == $#record_list+1){
+			die "No transcript_id field found in the GTF file!\n";
+		}		
+		
 		my $exon_start=$record_list[3];
 		my $exon_end=$record_list[4];
 		
-		#Inversione per gene -
 		if($record_list[6] eq "-"){
 			$strand=-1;
+		}
+		
+		#Inversione per gene -
+		if($strand == -1 && $force_strand != 1){
 			$exon_start=$gen_length-$record_list[4]+1;
 			$exon_end=$gen_length-$record_list[3]+1;
 		}
@@ -132,7 +166,9 @@ while(<GTF>){
 				#print "\tNON Esiste end\n";
 				%exon_hash2=();
 			}
-			$exon_hash2{$record_list[9]}=1;
+			#$exon_hash2{$record_list[9]}=1;
+			$exon_hash2{$record_list[$k]}=1;
+			
 			$exon_hash1{$exon_end}=\%exon_hash2;
 			
 		}
@@ -140,7 +176,9 @@ while(<GTF>){
 			#print "\tNON Esiste start\n";
 			%exon_hash1=();
 			my %exon_hash2=();
-			$exon_hash2{$record_list[9]}=1;
+			#$exon_hash2{$record_list[9]}=1;
+			$exon_hash2{$record_list[$k]}=1;
+			
 			$exon_hash1{$exon_end}=\%exon_hash2;
 		}
 		$exon_hash{$exon_start}=\%exon_hash1;
@@ -149,7 +187,13 @@ while(<GTF>){
 
 close GTF;
 
-if($strand != 1){
+print "The gene strand is ", ($strand == 1)?("PLUS"):("MINUS");
+my $cong=($strand == -1 && $force_strand == 1)?(" but"):(" and");
+print $cong;
+print " the isoform graph is ", ($force_strand == 1)?("forced on PLUS"):("on the gene"), " strand\n";
+
+
+if($strand == -1){
 	$gen_seq=reverse_complement($gen_seq);
 }
 
@@ -193,12 +237,22 @@ foreach my $key(sort {$a <=> $b} (keys %B_hash)){
 	#print "POS=".$key." FLAG=".$B_hash{$key}."\n";
 }
 
-my @G_list=();	#[list_ref:list of regions, 0|1, 0|1, trs_hash_ref ,0|1:contracted, list_of_out_ref, list_of_in_ref]	list of no-variation regions
-for(my $i=0; $i < $#B_list; $i++){
-	my @pos1=@{$B_list[$i]};
-	my @pos2=@{$B_list[$i+1]};
-	#print $pos[0]."-".$pos[1]."\n";
+#@G_list=(...,ref,...)
+#ref: reference to list=(reference to l1, f1, f2, trs_hash_ref ,f3:contracted, list_of_out_ref, list_of_in_ref) ==> list of no-variation regions
+#l1=(l1,r1,l2,r2,...) where li-ri is a region
+#f1: flag of the block left type ==> 0 for start and 1 for end
+#f2: flag of the block right type ==> 0 for start and 1 for end
+#f1 and f2 after contraction may be not consistent
+#trs_hash_ref: reference to the hash of the supporting transcripts
+#f3: contraction flag ==> 1 if the nodes was contracted, 2 if was deleted
+#list_of_out_ref: reference to the list of outcoming nodes (each node is represented by the reference ref in G_list)
+#list_of_in_ref: reference to the list of incoming nodes (each node is represented by the reference ref in G_list)
+my @G_list=();
 
+for(my $p=0; $p < $#B_list; $p++){
+	my @pos1=@{$B_list[$p]};
+	my @pos2=@{$B_list[$p+1]};
+	
 	my @region=();
 	my $add_region=0;
 	#Region of type start-* ==> no-variation region
@@ -271,6 +325,7 @@ for(my $i=0; $i < $#B_list; $i++){
 			}
 			$i++;
 		}
+		
 		push @region, \%region_trs;	
 		push @region, 0;
 		push @region, [];
@@ -290,7 +345,7 @@ for(my $i=0; $i <= $#G_list; $i++){
 	my @region=@{$G_list[$i]};
 	
 	#my @chunks=@{$region[0]};
-	#print $chunks[0]."-".$chunks[1]."-".$region[1]."-".$region[2]."\n";
+	#print $i, "->", $chunks[0]."-".$chunks[1]."-".$region[1]."-".$region[2]."\n";
 	
 	if($region[1] == $region[2]){
 		if($region[1] == 0){
@@ -338,10 +393,12 @@ for(my $i=0; $i < $#G_list; $i++){
 			}
 
 			for(my $j=$i+1; $j <= $#G_list; $j++){
+				
 				my @next_region=@{$G_list[$j]};
 				my %next_region_trs=%{$next_region[3]};
 				my $count_inters=0;
 				foreach my $tr(keys %next_region_trs){
+					
 					if(exists $hash_region_trs{$tr}){
 						if($hash_region_trs{$tr} == 1){
 							$hash_region_trs{$tr}=0;
@@ -349,10 +406,10 @@ for(my $i=0; $i < $#G_list; $i++){
 						}
 					}
 				}				
-
+			
 				if($adj_matx->[$i][$j] == 1){
 					if($j > $i+1 || $count_inters == 0){
-						die "Problem 1!\n";
+						die "Problem 2!\n";
 					}
 				}
 				else{
@@ -378,7 +435,6 @@ for(my $i=0; $i <= $#G_list; $i++){
 	}
 }
 
-
 #Path contraction
 my $i=0;
 while($contract_path >= 1 && $i <= $#G_list){
@@ -401,6 +457,7 @@ while($contract_path >= 1 && $i <= $#G_list){
 					if(scalar(@{${$out_ref}[6]}) == 1){
 						#Type start-*
 						if($contract_path == 2 || ${$out_ref}[1] == 0){
+							
 							#print "\tto region ".${${$out_ref}[0]}[0]."-".${${$out_ref}[0]}[1]."\n";
 														
 							my $link_nodes=1;
@@ -409,13 +466,35 @@ while($contract_path >= 1 && $i <= $#G_list){
 							if($contract_path == 1){
 								my %tr_first=%{${$region_ref}[3]};
 								my %tr_second=%{${$out_ref}[3]};
-							
-								my @keys_first=keys %tr_first;
-								foreach my $key(@keys_first){
-									if(!exists $tr_second{$key}){
+								
+								#RAFFA
+								my @chunks_from=@{${$region_ref}[0]};
+								my $right_from=$chunks_from[1];
+								my @chunks_to=@{${$out_ref}[0]};
+								my $left_to=$chunks_to[0];
+								my $p=0;
+								while($p <= $#G_list && $link_nodes == 1){
+									my $region_ref_cfr=$G_list[$p];
+									my @chunks_cfr=@{${$region_ref_cfr}[0]};
+									my $end_cfr=$chunks_cfr[0];
+									if($end_cfr > $right_from && $end_cfr < $left_to){
 										$link_nodes=0;
 									}
+									$p++;
 								}
+								
+								#RAFFA
+								if($link_nodes == 1){
+							
+									my @keys_first=keys %tr_first;
+									foreach my $key(@keys_first){
+										if(!exists $tr_second{$key}){
+											$link_nodes=0;
+										}
+									}
+								#RAFFA
+								}
+								
 								if($link_nodes == 1){
 									my @keys_second=keys %tr_second;
 									foreach my $key(@keys_second){
@@ -430,6 +509,14 @@ while($contract_path >= 1 && $i <= $#G_list){
 								${$out_ref}[4]=1; #Contract node
 								${$G_list[$i]}[5]=${$out_ref}[5];
 								push @{${$G_list[$i]}[0]}, @{${$out_ref}[0]};
+								
+								foreach my $out_n(@{${$out_ref}[5]}){
+									for(my $w=0; $w < scalar(@{${$out_n}[6]}); $w++){
+										if(${${$out_n}[6]}[$w] == $out_ref){
+											${${$out_n}[6]}[$w]=$G_list[$i];
+										}
+									}
+								}
 							
 								if($contract_path == 1 && ${$out_ref}[2] == 0){
 									$stop=1;	
@@ -460,8 +547,87 @@ while($contract_path >= 1 && $i <= $#G_list){
 	$i++;
 }
 
-#Node labelling
+#Eliminazione dei nodi iniziali/terminali (cioé con solo un arco uscente/entrante) di lunghezza < $min_length
+#[list_ref:list of regions, 0|1, 0|1, trs_hash_ref ,0|1|2:contracted|deleted, list_of_out_ref, list_of_in_ref]	list of no-variation regions
 my $k=0;
+while($k <= $#G_list){
+	if(${$G_list[$k]}[4] == 0){
+		my @outs=@{${$G_list[$k]}[5]};
+		my @ins=@{${$G_list[$k]}[6]};
+		if((scalar(@outs) == 1 && scalar(@ins) == 0) || (scalar(@outs) == 0 && scalar(@ins) == 1)){
+			my @regions=@{${$G_list[$k]}[0]};
+			die "Problem 1!\n" if(scalar(@regions) % 2 != 0);
+			my $region_length=0;
+			my $p=0;
+			while($p <= $#regions){
+				$region_length+=($regions[$p+1]-$regions[$p]+1);
+				$p+=2;
+			}
+			if($region_length < $min_length){
+				${$G_list[$k]}[4]=2; #Metto a deleted
+				if(scalar(@outs) == 1){	#nodo iniziale
+					my $out_ref=$outs[0];
+					my @out_region=@{$out_ref};
+					my @n_ins=@{$out_region[6]};
+					
+					my @new_n_ins=();
+					foreach my $n(@n_ins){
+						if($n != $G_list[$k]){
+							push @new_n_ins, $n;
+						}
+					}
+					#Non aggiorno i nodi entranti del nodo uscente perché risolvo in fase di stampa
+					${${${$G_list[$k]}[5]}[0]}[6]=\@new_n_ins;
+					${$G_list[$k]}[5]=[];
+				}
+				else{	#nodo terminale
+					my $in_ref=$ins[0];
+					my @in_region=@{$in_ref};
+					my @n_outs=@{$in_region[5]};
+				
+					my @new_n_outs=();
+					foreach my $n(@n_outs){
+						if($n != $G_list[$k]){
+							push @new_n_outs, $n;
+						}
+					}
+					#Aggiorno i nodi uscenti del nodo entrante perché risolvo in fase di stampa
+					${${${$G_list[$k]}[6]}[0]}[5]=\@new_n_outs;			
+					${$G_list[$k]}[6]=[];
+				}
+			}
+		}
+	}
+	$k++;
+}
+
+#Eliminazione degli altri nodi di lunghezza < $min_length
+#[list_ref:list of regions, 0|1, 0|1, trs_hash_ref ,0|1:contracted, list_of_out_ref, list_of_in_ref]	list of no-variation regions
+#$k=0;
+#while($k <= $#G_list){
+#	if(${$G_list[$k]}[4] == 0){
+#		my @regions=@{${$G_list[$k]}[0]};
+#		die "Problem 1!\n" if(scalar(@regions) % 2 != 0);
+#		my $region_length=0;
+#		my $p=0;
+#		while($p <= $#regions){
+#			$region_length+=($regions[$p+1]-$regions[$p]+1);
+#			$p+=2;
+#		}
+#		if($region_length < $min_length){
+#			my @outs=@{${$G_list[$k]}[5]};
+#			my @ins=@{${$G_list[$k]}[6]};
+#			
+#			#${$G_list[$k]}[4]=2;	#Metto a deleted
+#			my $out_ref=0;
+#			my $in_ref=0;
+#		}
+#	}
+#	$k++;
+#}
+
+#Node labelling
+$k=0;
 my $label=1;
 my $label_contr=1;
 while($k <= $#G_list){
@@ -494,7 +660,9 @@ foreach my $node_ref(@G_list){
 		while($i <= $#chunks){
 			$title.=$chunks[$i]."-".$chunks[$i+1].";";
 			$dimension=$dimension+$chunks[$i+1]-$chunks[$i]+1;
+			
 			$chunk_seq=$chunk_seq.substr($gen_seq, $chunks[$i]-1, $chunks[$i+1]-$chunks[$i]+1);
+			
 			$i+=2;	
 		}
 		print OUT "node\#".$region[7]." ".$chunk_seq."\n";
@@ -520,6 +688,7 @@ foreach my $node_ref(@G_list){
 			$i+=2;	
 		}
 		my @outs=@{$region[5]};
+		
 		foreach my $adj_ref(@outs){
 			my @dest_region=@{$adj_ref};
 			
@@ -530,7 +699,7 @@ foreach my $node_ref(@G_list){
 				$dest_title.=$dest_chunks[$j]."-".$dest_chunks[$j+1].",";
 				$j+=2;	
 			}
-
+			
 			print OUT "edge\#".$edge_index." ".$region[7].";".$dest_region[7]."\n";
 			print OUTREG "edge\#".$edge_index." ".$region[7].";".$dest_region[7]."\n";
 
@@ -555,13 +724,12 @@ sub reverse_complement{
 	my $gen_to_be_rev=shift;
 	
 	my $rev_seq=reverse $gen_to_be_rev;
-	my @car_list=split(//, $rev_seq);
 	my $new_seq="";
-	foreach my $car(@car_list){
-		$new_seq=$new_seq.complement($car);
-	}
-		
-	return $new_seq;
+
+	my $i=0;
+	
+	$rev_seq =~ tr/acgtACGT/tgcaTGCA/;
+	return $rev_seq;
 }
 
 sub complement{

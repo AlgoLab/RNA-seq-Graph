@@ -115,9 +115,6 @@ int main(int argc, char* argv[]){
         while(!ref.eof()){
             readMeta(ref, fasta_tag, Fasta());
             read(ref, read_seq, Fasta());
-            //Reversed and complemented Sequence
-            //String<Dna5> rev_comp = Dna5StringReverseComplement(read_seq);
-            //read_seq = rev_comp;
             string read_tag;
             assign(read_tag,fasta_tag);
             read_size+=((length(fasta_tag)*sizeof(char))+(length(read_seq)*sizeof(char)));
@@ -146,7 +143,7 @@ int main(int argc, char* argv[]){
                 }
             }else{
                 for(int i=0; i<argc-4; ++i){
-                    if(read_tag.find("refFlat_"+genes[i]) != string::npos){
+                    if(read_tag.find(genes[i]) != string::npos){
                         sp_g = i;
                     }
                 }
@@ -385,7 +382,7 @@ int main(int argc, char* argv[]){
                 }
             }else{
                 for(int i=0; i<argc-4; ++i){
-                    if(read_tag.find("refFlat_"+genes[i]) != string::npos){
+                    if(read_tag.find(genes[i]) != string::npos){
                         sp_g = i;
                     }
                 }
