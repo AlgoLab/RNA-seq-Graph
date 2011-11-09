@@ -89,8 +89,8 @@ int main(int argc, char* argv[]){
     std::ofstream not_mapped;
     data_file.open(argv[1], std::ios_base::in | std::ios_base::binary);
     ref.open(argv[2], std::ios_base::in | std::ios_base::binary);
-    out_file.open("RNA_SEQ_NEW.fa");
-    not_mapped.open("RNA_SEQ_NOT_MAPPED");
+    out_file.open("RNASEQ_NEW.fa");
+    not_mapped.open("RNASEQ_NOT_MAPPED");
 
     //Refseq map: gene_id, sequence(64bp), if_mapped_flag
     //std::map<unsigned long long, pair<pair<int,string>,bool> > ref_map;
@@ -127,15 +127,30 @@ int main(int argc, char* argv[]){
                     std::cerr << "Processed: " << perc << "%" << std::endl;
                 }
             }
-            if(read_tag.find("NM_")!=string::npos){
-                int sp_g = -1;
-                if(!exp_genes){
-                    //Find gene name
-                    size_t pos_s = read_tag.find_last_of("(");
-                    size_t pos_f = read_tag.find_last_of(")");
-                    genes.push_back(read_tag.substr(pos_s+1,pos_f-pos_s-1));
-                    sp_g = genes.size() -1;
-                    //std::cout << read_tag.substr(pos_s+1,pos_f-pos_s-1) << std::endl;
+            int sp_g = -1;
+            if(!exp_genes){
+                //Find gene name
+                size_t pos_g = read_tag.find(" ");
+                genes.push_back(read_tag.substr(0,pos_g));
+                sp_g = genes.size() -1;
+                //std::cerr << read_tag.substr(0,pos_f) << " GENE" << std::endl;
+                for(unsigned int i = 0;i<=length(read_seq)-READ_LEN;i++){
+                    num_fing++;
+                    string read;
+                    assign(read,infix(read_seq,i,i+READ_LEN));
+                    unsigned long long fing = fingerprint(read.substr(0,READ_LEN/2));
+                    if(ref_map.find(fing) == ref_map.end()){
+                        ref_map[fing] = make_pair(make_pair(make_pair(sp_g,read.substr(0,READ_LEN/2)),
+                                                            fingerprint(read.substr(READ_LEN/2))),false);
+                    }
+                }
+            }else{
+                for(int i=0; i<argc-4; ++i){
+                    if(read_tag.find("refFlat_"+genes[i]) != string::npos){
+                        sp_g = i;
+                    }
+                }
+                if(sp_g != -1){
                     for(unsigned int i = 0;i<=length(read_seq)-READ_LEN;i++){
                         num_fing++;
                         string read;
@@ -145,45 +160,6 @@ int main(int argc, char* argv[]){
                             ref_map[fing] = make_pair(make_pair(make_pair(sp_g,read.substr(0,READ_LEN/2)),
                                                                 fingerprint(read.substr(READ_LEN/2))),false);
                         }
-                    }
-                    /*
-                    //For the reversed and complemented sequence
-                    for(unsigned int i = 0;i<=length(rev_comp)-READ_LEN;i++){
-                        num_fing++;
-                        string read;
-                        assign(read,infix(rev_comp,i,i+READ_LEN));
-                        unsigned long long fing = fingerprint(read.substr(0,READ_LEN/2));
-                        if(ref_map.find(fing) == ref_map.end()){
-                            ref_map[fing] = make_pair(make_pair(sp_g,read),false);
-                        }
-                        }*/
-                }else{
-                    for(int i=0; i<argc-4; ++i){
-                        if(read_tag.find("("+genes[i]+")") != string::npos){
-                            sp_g = i;
-                        }
-                    }
-                    if(sp_g != -1){
-                        for(unsigned int i = 0;i<=length(read_seq)-READ_LEN;i++){
-                            num_fing++;
-                            string read;
-                            assign(read,infix(read_seq,i,i+READ_LEN));
-                            unsigned long long fing = fingerprint(read.substr(0,READ_LEN/2));
-                            if(ref_map.find(fing) == ref_map.end()){
-                                ref_map[fing] = make_pair(make_pair(make_pair(sp_g,read.substr(0,READ_LEN/2)),
-                                                                fingerprint(read.substr(READ_LEN/2))),false);
-                            }
-                        }/*
-                        //For the reversed and complemented sequence
-                        for(unsigned int i = 0;i<=length(rev_comp)-READ_LEN;i++){
-                            num_fing++;
-                            string read;
-                            assign(read,infix(rev_comp,i,i+READ_LEN));
-                            unsigned long long fing = fingerprint(read.substr(0,READ_LEN/2));
-                            if(ref_map.find(fing) == ref_map.end()){
-                                ref_map[fing] = make_pair(make_pair(sp_g,read),false);
-                            }
-                            }*/
                     }
                 }
             }
@@ -325,17 +301,28 @@ int main(int argc, char* argv[]){
         std::cerr << "Total RNA-seq Extracted Fingerprints: " << tot_read*2 << std::endl << std::endl;
         //std::cerr << "RNA-seq Fingerprints (Unique): " << data_map.size() << std::endl;
         data_file.close();
+        data_file.clear();
         not_mapped.close();
         //Verify how many Refseq reads are mapped into RNA-seq reads
         long ref_mapped = 0;
+        long ref_not_mapped = 0;
         //std::map<unsigned long long, pair<pair<int, string>,bool> >::iterator it;
         std::map<unsigned long long, pair<pair<pair<int,string>,unsigned long long>,bool> >::iterator it;
+        std::map<unsigned long long, bool> refseq_not_mapped;
         for(it = ref_map.begin(); it != ref_map.end(); ++it){
-            if(it->second.second) ref_mapped++;
+            if(it->second.second){
+                ref_mapped++;
+            }else{ 
+                ref_not_mapped++;
+                refseq_not_mapped[it->first] = false;
+            }
         }
         std::cerr << "Total Refseq Extracted Fingerprints Unique: " << ref_map.size() << std::endl;
         std::cerr << "Total Refseq Fingerprints Mapped into RNA-seq Fingerprints: " << ref_mapped << std::endl;
-        
+        std::cerr << "Total Refseq Fingerprints NOT Mapped into RNA-seq Fingerprints: " << ref_not_mapped << std::endl;
+        std::cerr << std::endl;
+        out_file.flush();
+
         //REVERSE AND COMLPEMENT
         num_fing = 0;
         read_size = 0;
@@ -347,17 +334,21 @@ int main(int argc, char* argv[]){
         data_map.clear();
         file_dimension = 0;
         //Files
-        ifstream f("RNA_SEQ_NOT_MAPPED",::std::ios_base::in|::std::ios_base::binary|ios::ate);
-        if(f.is_open()){
-            file_dimension = f.tellg();
-            f.close();
+        ifstream f_tmp("RNASEQ_NOT_MAPPED",::std::ios_base::in|::std::ios_base::binary|ios::ate);
+        if(f_tmp.is_open()){
+            file_dimension = f_tmp.tellg();
+            f_tmp.close();
         }else{
             std::cerr << "Unable to open files " << std::endl;
             return 1;	
         }
-        data_file.open("RNA_SEQ_NOT_MAPPED", std::ios_base::in | std::ios_base::binary);
-        //ref.seekg(0, ios::beg);
+        data_file.open("RNASEQ_NOT_MAPPED", std::ios_base::in | std::ios_base::binary);
         ref.open(argv[2], std::ios_base::in | std::ios_base::binary);
+        //Check if there are unmapped reads
+        if(!data_file.is_open() || !ref.is_open() || file_dimension == 0){
+            std::cerr << "No unmapped RNA-seq" << std::endl;
+            return 1;
+        }
         std::cerr << "Processing Reversed and Complemented Sequences ..." << std::endl;
         tStart = clock();
         while(!ref.eof()){
@@ -375,15 +366,30 @@ int main(int argc, char* argv[]){
                     std::cerr << "Processed: " << perc << "%" << std::endl;
                 }
             }
-            if(read_tag.find("NM_")!=string::npos){
-                int sp_g = -1;
-                if(!exp_genes){
-                    //Find gene name
-                    size_t pos_s = read_tag.find_last_of("(");
-                    size_t pos_f = read_tag.find_last_of(")");
-                    genes.push_back(read_tag.substr(pos_s+1,pos_f-pos_s-1));
-                    sp_g = genes.size() - 1;
-                    //std::cout << read_tag.substr(pos_s+1,pos_f-pos_s-1) << std::endl;
+            int sp_g = -1;
+            if(!exp_genes){
+                //Find gene name
+                size_t pos_g = read_tag.find_last_of(" ");
+                genes.push_back(read_tag.substr(0,pos_g));
+                sp_g = genes.size() - 1;
+                //std::cout << read_tag.substr(0,pos_g) << std::endl;
+                for(unsigned int i = 0;i<=length(read_seq)-READ_LEN;i++){
+                    num_fing++;
+                    string read;
+                    assign(read,infix(read_seq,i,i+READ_LEN));
+                    unsigned long long fing = fingerprint(read.substr(0,READ_LEN/2));
+                    if(ref_map.find(fing) == ref_map.end()){
+                        ref_map[fing] = make_pair(make_pair(make_pair(sp_g,read.substr(0,READ_LEN/2)),
+                                                            fingerprint(read.substr(READ_LEN/2))),false);
+                    }
+                }
+            }else{
+                for(int i=0; i<argc-4; ++i){
+                    if(read_tag.find("refFlat_"+genes[i]) != string::npos){
+                        sp_g = i;
+                    }
+                }
+                if(sp_g != -1){
                     for(unsigned int i = 0;i<=length(read_seq)-READ_LEN;i++){
                         num_fing++;
                         string read;
@@ -392,24 +398,6 @@ int main(int argc, char* argv[]){
                         if(ref_map.find(fing) == ref_map.end()){
                             ref_map[fing] = make_pair(make_pair(make_pair(sp_g,read.substr(0,READ_LEN/2)),
                                                                 fingerprint(read.substr(READ_LEN/2))),false);
-                        }
-                    }
-                }else{
-                    for(int i=0; i<argc-4; ++i){
-                        if(read_tag.find("("+genes[i]+")") != string::npos){
-                            sp_g = i;
-                        }
-                    }
-                    if(sp_g != -1){
-                        for(unsigned int i = 0;i<=length(read_seq)-READ_LEN;i++){
-                            num_fing++;
-                            string read;
-                            assign(read,infix(read_seq,i,i+READ_LEN));
-                            unsigned long long fing = fingerprint(read.substr(0,READ_LEN/2));
-                            if(ref_map.find(fing) == ref_map.end()){
-                                ref_map[fing] = make_pair(make_pair(make_pair(sp_g,read.substr(0,READ_LEN/2)),
-                                                                fingerprint(read.substr(READ_LEN/2))),false);
-                            }
                         }
                     }
                 }
