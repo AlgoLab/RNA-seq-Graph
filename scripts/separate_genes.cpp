@@ -22,7 +22,7 @@ using namespace std;
 
 int main(int argc, char* argv[]){
     if(argc < 3){
-        std::cerr << "Usage: confronto <RNA-seq_file> --gene <Gene>" << std::endl;
+        std::cerr << "Usage: separate_genes <RNA-seq_file> --gene <Gene>" << std::endl;
         std::cerr << std::endl;
         return 1;
     }
