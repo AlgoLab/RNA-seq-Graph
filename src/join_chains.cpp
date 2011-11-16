@@ -61,7 +61,7 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
         graph_nodes[ch_iter->first] = node_id;
 #ifdef GDL_OUT        
         //GDL nodes
-        gdl_file << "\t node: {\n";
+        gdl_file << "\tnode: {\n";
         gdl_file << "\t\t title: \"" << node_id << "\"\n";
         gdl_file << "\t\t label: \"" << node_id << " - " << ch_iter->second.length() << "\"\n";
         gdl_file << "\t\t //" << ch_iter->second << "\n";
