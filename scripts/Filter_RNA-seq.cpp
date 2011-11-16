@@ -1,3 +1,22 @@
+/*
+Q: When I access files in SeqAn I get a warning: WARNING: FilePtr is not 64bit wide.
+A: Large file access is disabled. This is not a problem unless you access 4GB or larger files. 
+To enable large files, you have to make sure to include all SeqAn headers before <fstream> or <iostream>. 
+So reorder:
+
+#include <iostream>
+#include <fstream>
+#include <seqan/index.h>
+
+to:
+
+#include <seqan/index.h>
+#include <iostream>
+#include <fstream>
+
+Alternatively, you can add -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 to the g++ command line. 
+*/
+
 #include <fstream>
 #include <iostream>
 #include <string>

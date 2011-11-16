@@ -16,6 +16,8 @@
 #include <seqan/file.h>
 
 #define READ_LEN 64
+//Number of RNASEQ processed simultaneously
+#define RNASEQ_BLOCK 10000000
 
 using namespace seqan;
 using namespace std;
@@ -178,7 +180,7 @@ int main(int argc, char* argv[]){
         perc = 0;
         long tot_read = 0;
         while(!data_file.eof()){
-            while(num_read < 5000000 && !data_file.eof()){
+            while(num_read < RNASEQ_BLOCK && !data_file.eof()){
                 readMeta(data_file, fasta_tag, Fasta());
                 read(data_file, read_seq, Fasta());
                 read_size+=((length(fasta_tag)*sizeof(char))+(length(read_seq)*sizeof(char)));
@@ -413,7 +415,7 @@ int main(int argc, char* argv[]){
         perc = 0;
         tot_read = 0;
         while(!data_file.eof()){
-            while(num_read < 5000000 && !data_file.eof()){
+            while(num_read < RNASEQ_BLOCK && !data_file.eof()){
                 readMeta(data_file, fasta_tag, Fasta());
                 read(data_file, read_seq, Fasta());
                 read_size+=((length(fasta_tag)*sizeof(char))+(length(read_seq)*sizeof(char)));
