@@ -195,10 +195,17 @@ int main(int argc, char* argv[]){
                 bool mapped = false;
                 if(ref_map.find(left_f) != ref_map.end() && ref_map.find(right_f) != ref_map.end()){
                     //std::cout << "Caso 1" << std::endl;
-                    out_file << ">";
-                    out_file << "l:" << genes[ref_map[left_f][0].first] << "|";
-                    out_file << "r:" << genes[ref_map[right_f][0].first] << std::endl;
-                    out_file << read << std::endl;
+                    //Insert in every gene 
+                    for(int i=0; i<ref_map[left_f].size(); ++i){
+                        for(int j=0; j<ref_map[right_f].size(); ++j){
+                            if(ref_map[left_f][i].first == ref_map[right_f][j].first){
+                                out_file << ">";
+                                out_file << "l:" << genes[ref_map[left_f][i].first] << "|";
+                                out_file << "r:" << genes[ref_map[right_f][j].first] << std::endl;
+                                out_file << read << std::endl;
+                            }
+                        }
+                    }
                     mapped = true;
                 }else{
                     if(ref_map.find(left_f) != ref_map.end()){
@@ -224,8 +231,11 @@ int main(int argc, char* argv[]){
                             }
                         }
                         if(!left_mapped){
-                            out_file << ">l:" << genes[ref_map[left_f].at(0).first] << "|r:no-mapping";
-                            out_file << read << std::endl;
+                            //All collisions are potential mappings
+                            for(int j=0; j<ref_map[left_f].size(); ++j){
+                                out_file << ">l:" << genes[ref_map[left_f].at(j).first] << "|r:no-mapping";
+                                out_file << read << std::endl;
+                            }
                         }
                     }
                     if(ref_map.find(right_f) != ref_map.end()){
@@ -249,8 +259,11 @@ int main(int argc, char* argv[]){
                             }
                         }
                         if(!right_mapped){
-                            out_file << ">l:no-mapping|r:" << genes[ref_map[right_f].at(0).first] << std::endl;
-                            out_file << read << std::endl;
+                            //All collisions are potential mappings
+                            for(int j=0; j<ref_map[right_f].size(); ++j){
+                                out_file << ">l:no-mapping|r:" << genes[ref_map[right_f].at(j).first] << std::endl;
+                                out_file << read << std::endl;
+                            }
                         }
                     }
                 }
@@ -262,10 +275,17 @@ int main(int argc, char* argv[]){
                     right_f = fingerprint(read.substr(READ_LEN/2));
                     if(ref_map.find(left_f) != ref_map.end() && ref_map.find(right_f) != ref_map.end()){
                         //std::cout << "Caso 1 RC" << std::endl;
-                        out_file << ">";
-                        out_file << "l:" << genes[ref_map[left_f][0].first] << "|";
-                        out_file << "r:" << genes[ref_map[right_f][0].first] << std::endl;
-                        out_file << read << std::endl;
+                        //Insert in every gene 
+                        for(int i=0; i<ref_map[left_f].size(); ++i){
+                            for(int j=0; j<ref_map[right_f].size(); ++j){
+                                if(ref_map[left_f][i].first == ref_map[right_f][j].first){
+                                    out_file << ">";
+                                    out_file << "l:" << genes[ref_map[left_f][i].first] << "|";
+                                    out_file << "r:" << genes[ref_map[right_f][j].first] << std::endl;
+                                    out_file << read << std::endl;
+                                }
+                            }
+                        }
                         mapped = true;
                     }else{
                         if(ref_map.find(left_f) != ref_map.end()){
@@ -291,8 +311,11 @@ int main(int argc, char* argv[]){
                                 }
                             }
                             if(!left_mapped){
-                                out_file << ">l:" << genes[ref_map[left_f].at(0).first] << "|r:no-mapping";
-                                out_file << read << std::endl;
+                                //All collisions are potential mappings
+                                for(int j=0; j<ref_map[left_f].size(); ++j){
+                                    out_file << ">l:" << genes[ref_map[left_f].at(j).first] << "|r:no-mapping";
+                                    out_file << read << std::endl;
+                                }
                             }
                         }
                         if(ref_map.find(right_f) != ref_map.end()){
@@ -316,8 +339,11 @@ int main(int argc, char* argv[]){
                                 }
                             }
                             if(!right_mapped){
-                                out_file << ">l:no-mapping|r:" << genes[ref_map[right_f].at(0).first] << std::endl;
-                                out_file << read << std::endl;
+                                 //All collisions are potential mappings
+                                for(int j=0; j<ref_map[right_f].size(); ++j){
+                                    out_file << ">l:no-mapping|r:" << genes[ref_map[right_f].at(j).first] << std::endl;
+                                    out_file << read << std::endl;
+                                }
                             }
                         }
                     }
