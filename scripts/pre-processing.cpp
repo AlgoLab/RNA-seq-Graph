@@ -164,7 +164,7 @@ int main(int argc, char* argv[]){
         
         //Mapping
         int found_neigh = 0;
-        //String<Dna5> rev_comp = Dna5StringReverseComplement(read_seq);
+        
         //RNA-seq Reads
         tStart = clock();
         std::cerr << "Processing RNA-seq file..." << std::endl;
@@ -181,8 +181,8 @@ int main(int argc, char* argv[]){
                     std::cerr << "Processed: " << perc << "%" << std::endl;
                 }
             }
-            //for(unsigned int i = 0;i<=length(read_seq)-READ_LEN;i++){ //All 64bp Reads
-            for(unsigned int i = 0;i<1;i++){ //Only 1Read: 1x75bp = 1x64bp
+            for(unsigned int i = 0;i<=length(read_seq)-READ_LEN;i++){ //All 64bp Reads
+            //for(unsigned int i = 0;i<1;i++){ //Only 1Read: 1x75bp = 1x64bp
                 string read;
                 assign(read,infix(read_seq,i,i+READ_LEN));
                 string read_tag;
@@ -194,166 +194,148 @@ int main(int argc, char* argv[]){
                 bool right_mapped = false;
                 bool mapped = false;
                 if(ref_map.find(left_f) != ref_map.end() && ref_map.find(right_f) != ref_map.end()){
-                    std::cout << "Caso 1" << std::endl;
+                    //std::cout << "Caso 1" << std::endl;
                     out_file << ">";
                     out_file << "l:" << genes[ref_map[left_f][0].first] << "|";
                     out_file << "r:" << genes[ref_map[right_f][0].first] << std::endl;
-                    out_file << read_seq << std::endl;
+                    out_file << read << std::endl;
                     mapped = true;
                 }else{
                     if(ref_map.find(left_f) != ref_map.end()){
-                        std::cout << "Caso 2" << std::endl;
+                        //std::cout << "Caso 2" << std::endl;
+                        mapped = true;
                         for(int j=0; j<ref_map[left_f].size();++j){
                             string ref_right;
-                            int pos = ref_map[left_f].at(j).second + (READ_LEN/2);
+                            //Check if the position is beyond the length of the Refseq sequence
+                            int pos_s = ref_map[left_f].at(j).second + (READ_LEN/2);
+                            int pos_e = ref_map[left_f].at(j).second + READ_LEN;
+                            if(pos_e > length(ref_sequences[ref_map[left_f].at(j).first])){
+                                pos_e = length(ref_sequences[ref_map[left_f].at(j).first]);
+                            }
                             assign(ref_right,infix(ref_sequences[ref_map[left_f].at(j).first],
-                                                   pos,pos+READ_LEN/2));
+                                                   pos_s,pos_e));
                                                       
                             if(levenshtein_distance(read.substr(READ_LEN/2),ref_right)<=1){
                                 out_file << ">";
                                 out_file << "l:" << genes[ref_map[left_f].at(j).first] << "|";
                                 out_file << "r:" << genes[ref_map[left_f].at(j).first] << std::endl;
                                 out_file << read.substr(0,READ_LEN/2) + ref_right << std::endl;
-                                mapped = true;
+                                left_mapped = true;
                             }
+                        }
+                        if(!left_mapped){
+                            out_file << ">l:" << genes[ref_map[left_f].at(0).first] << "|r:no-mapping";
+                            out_file << read << std::endl;
                         }
                     }
                     if(ref_map.find(right_f) != ref_map.end()){
-                        std::cout << "Caso 3" << std::endl;
+                        //std::cout << "Caso 3" << std::endl;
+                        mapped = true;
                         for(int j=0; j<ref_map[right_f].size();++j){
                             string ref_left;
+                            //Check if the initial mapping position is less than 0
+                            int pos_s = ref_map[right_f].at(j).second-READ_LEN/2;
+                            if(pos_s < 0){
+                                pos_s = 0;
+                            }
                             assign(ref_left,infix(ref_sequences[ref_map[right_f].at(j).first],
-                                                   ref_map[right_f].at(j).second-READ_LEN/2,READ_LEN/2));
+                                                   pos_s,pos_s+READ_LEN/2));
                            
                             if(levenshtein_distance(read.substr(0,READ_LEN/2),ref_left)<=1){
-                                out_file << ">";
-                                out_file << "l:" << genes[ref_map[right_f].at(j).first] << "|";
+                                out_file << ">l:" << genes[ref_map[right_f].at(j).first] << "|";
                                 out_file << "r:" << genes[ref_map[right_f].at(j).first] << std::endl;
                                 out_file << ref_left + read.substr(READ_LEN/2) << std::endl;
-                                mapped = true;
+                                right_mapped = true;
                             }
+                        }
+                        if(!right_mapped){
+                            out_file << ">l:no-mapping|r:" << genes[ref_map[right_f].at(0).first] << std::endl;
+                            out_file << read << std::endl;
                         }
                     }
                 }
+                //If not mapped try the Reverse and Complement
                 if(!mapped){
-                    not_mapped << ">" << read_tag << std::endl;
-                    not_mapped << read << std::endl;
-                }
-            }
-        }
-        std::cerr << "RNA-seq Extracted Reads: " << tot_read << std::endl;
-            /*
-            int num_neigh = 0;
-            //Generazione vicini a distanza 1
-            char sub[] = {'A','C','G','T'};
-            //std::map<unsigned long long, pair<pair<int, string>,bool> >::iterator it;
-            std::map<unsigned long long, pair<pair<pair<int,string>,unsigned long long>,bool> >::iterator it;
-            for(it = ref_map.begin(); it != ref_map.end(); ++it){
-                string s = it->second.first.first.second;
-                //Controllo il read stesso
-                if(data_map.find(fingerprint(s))!=data_map.end()){
-                    found_neigh++;
-                    data_map[fingerprint(s)] = fingerprint(s);
-                    it->second.second = true;
-                    //std::cerr << s << " " << fingerprint(s) << std::endl;
-                }
-                //... ed i vicini a distanza 1
-                for(unsigned int i=0; i<s.length(); ++i){
-                    //std::cout << s << std::endl;
-                    for(int j=0; j<4; ++j){
-                        if(s.at(i)!=sub[j]){
-                            //Vicino a distanza 1
-                            string rep = s;
-                            rep.replace(i,1,1,sub[j]);
-                            num_neigh++;
-                            //std::cerr << rep << std::endl;
-                            if(data_map.find(fingerprint(rep))!=data_map.end()){
-                                found_neigh++;
-                                data_map[fingerprint(rep)] = fingerprint(s);
-                                it->second.second = true;
-                                //std::cerr << rep << std::endl;
-                                //std::cerr << data_map[fingerprint(rep)].second << std::endl;
+                    String<Dna5> rev_comp = Dna5StringReverseComplement(read);
+                    assign(read,rev_comp);
+                    left_f = fingerprint(read.substr(0,READ_LEN/2));
+                    right_f = fingerprint(read.substr(READ_LEN/2));
+                    if(ref_map.find(left_f) != ref_map.end() && ref_map.find(right_f) != ref_map.end()){
+                        //std::cout << "Caso 1 RC" << std::endl;
+                        out_file << ">";
+                        out_file << "l:" << genes[ref_map[left_f][0].first] << "|";
+                        out_file << "r:" << genes[ref_map[right_f][0].first] << std::endl;
+                        out_file << read << std::endl;
+                        mapped = true;
+                    }else{
+                        if(ref_map.find(left_f) != ref_map.end()){
+                            //std::cout << "Caso 2 RC" << std::endl;
+                            mapped = true;
+                            for(int j=0; j<ref_map[left_f].size();++j){
+                                string ref_right;
+                                //Check if the position is beyond the length of the Refseq sequence
+                                int pos_s = ref_map[left_f].at(j).second + (READ_LEN/2);
+                                int pos_e = ref_map[left_f].at(j).second + READ_LEN;
+                                if(pos_e > length(ref_sequences[ref_map[left_f].at(j).first])){
+                                    pos_e = length(ref_sequences[ref_map[left_f].at(j).first]);
+                                }
+                                assign(ref_right,infix(ref_sequences[ref_map[left_f].at(j).first],
+                                                       pos_s,pos_e));
+                            
+                                if(levenshtein_distance(read.substr(READ_LEN/2),ref_right)<=1){
+                                    out_file << ">";
+                                    out_file << "l:" << genes[ref_map[left_f].at(j).first] << "|";
+                                    out_file << "r:" << genes[ref_map[left_f].at(j).first] << std::endl;
+                                    out_file << read.substr(0,READ_LEN/2) + ref_right << std::endl;
+                                    left_mapped = true;
+                                }
+                            }
+                            if(!left_mapped){
+                                out_file << ">l:" << genes[ref_map[left_f].at(0).first] << "|r:no-mapping";
+                                out_file << read << std::endl;
+                            }
+                        }
+                        if(ref_map.find(right_f) != ref_map.end()){
+                            //std::cout << "Caso 3 RC" << std::endl;
+                            mapped = true;
+                            for(int j=0; j<ref_map[right_f].size();++j){
+                                string ref_left;
+                                //Check if the initial mapping position is less than 0
+                                int pos_s = ref_map[right_f].at(j).second-READ_LEN/2;
+                                if(pos_s < 0){
+                                    pos_s = 0;
+                                }
+                                assign(ref_left,infix(ref_sequences[ref_map[right_f].at(j).first],
+                                                      pos_s,pos_s+READ_LEN/2));
+                           
+                                if(levenshtein_distance(read.substr(0,READ_LEN/2),ref_left)<=1){
+                                    out_file << ">l:" << genes[ref_map[right_f].at(j).first] << "|";
+                                    out_file << "r:" << genes[ref_map[right_f].at(j).first] << std::endl;
+                                    out_file << ref_left + read.substr(READ_LEN/2) << std::endl;
+                                    right_mapped = true;
+                                }
+                            }
+                            if(!right_mapped){
+                                out_file << ">l:no-mapping|r:" << genes[ref_map[right_f].at(0).first] << std::endl;
+                                out_file << read << std::endl;
                             }
                         }
                     }
                 }
-            }
-            std::cerr << "Total Refseq Extracted Fingerprints Unique: " << ref_map.size() << std::endl;
-            std::cerr << "Total Refseq Fingerprint Neighbor (DH<1) Generated: " << num_neigh << std::endl;
-            std::cerr << "Refseq (and Neighbor) - RNAseq Fingerprint Mappings: " << found_neigh << std::endl << std::endl;
-            //Re-construction of RNA-seq reads
-            for(unsigned int i=0; i<v.size(); ++i){
-                //std::cerr << v[i] << "\n";
-                //std::cerr << v[i].substr(0,READ_LEN/2) << "\n";
-                //std::cerr << v[i].substr(READ_LEN/2) << "\n";
-                unsigned long long left_f = fingerprint(v[i].substr(0,READ_LEN/2));
-                unsigned long long right_f = fingerprint(v[i].substr(READ_LEN/2));
-                
-                if(data_map[left_f] == 0 && data_map[right_f] == 0){
-                    //std::cout << ">" << tags[i] << "\n";
-                    not_mapped << ">" << tags[i] << "\n";
-                    //std::cout << v[i] << "\n";
-                    not_mapped << v[i] << "\n";
-                }else{
-                    //std::cout << ">";
-                    out_file << ">";
-                    string new_read = "";
-                    if(data_map[left_f] != 0){
-                        //std::cout << "l:" << genes[ref_map[data_map[left_f]].first.first] << "|";
-                        out_file << "l:" << genes[ref_map[data_map[left_f]].first.first.first] << "|";
-                        new_read += ref_map[data_map[left_f]].first.first.second;
-                    }else{
-                        //std::cerr << "l: " << v[i].substr(0,READ_LEN/2) << std::endl;
-                        new_read += v[i].substr(0,READ_LEN/2);
-                    }
-                    if(data_map[right_f] != 0){
-                        //std::cout << "r:" << genes[ref_map[data_map[right_f]].first.first] << "|";
-                        out_file << "r:" << genes[ref_map[data_map[right_f]].first.first.first] << "|";
-                        new_read += ref_map[data_map[right_f]].first.first.second;
-                    }else{
-                        //std::cerr << "r: " << v[i].substr(READ_LEN/2) << std::endl;
-                        new_read += v[i].substr(READ_LEN/2);
-                    }
-                    //std::cout << "mRNA\n";
-                    out_file << "mRNA\n";
-                    //std::cout << new_read << "\n";
-                    out_file << new_read << "\n";
+                //Not mapped: normal and Rev & Comp
+                if(!mapped){
+                    //std::cout << "Caso No Mapping" << std::endl;
+                    not_mapped << ">" << read_tag << std::endl;
+                    not_mapped << read_seq << std::endl;
                 }
             }
-            //Reset tables...
-            data_map.clear();
-            v.clear();
-            tags.clear();
-            num_read = 0;
         }
+
         std::cerr << "Processing RNA-seq file...done!" << std::endl;
         std::cerr << "Processing took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
         std::cerr << " seconds." << std::endl;
-        std::cerr << "Total RNA-seq Extracted Fingerprints: " << tot_read*2 << std::endl << std::endl;
-        //std::cerr << "RNA-seq Fingerprints (Unique): " << data_map.size() << std::endl;
-        data_file.close();
-        data_file.clear();
+        std::cerr << "RNA-seq Extracted Reads: " << tot_read << std::endl;
         not_mapped.close();
-        //Verify how many Refseq reads are mapped into RNA-seq reads
-        long ref_mapped = 0;
-        long ref_not_mapped = 0;
-        //std::map<unsigned long long, pair<pair<int, string>,bool> >::iterator it;
-        std::map<unsigned long long, pair<pair<pair<int,string>,unsigned long long>,bool> >::iterator it;
-        std::map<unsigned long long, bool> refseq_not_mapped;
-        for(it = ref_map.begin(); it != ref_map.end(); ++it){
-            if(it->second.second){
-                ref_mapped++;
-            }else{ 
-                ref_not_mapped++;
-                refseq_not_mapped[it->first] = false;
-            }
-            }
-        std::cerr << "Total Refseq Extracted Fingerprints Unique: " << ref_map.size() << std::endl;
-        std::cerr << "Total Refseq Fingerprints Mapped into RNA-seq Fingerprints: " << ref_mapped << std::endl;
-        std::cerr << "Total Refseq Fingerprints NOT Mapped into RNA-seq Fingerprints: " << ref_not_mapped << std::endl;
-        std::cerr << std::endl;
-        out_file.flush();
-            */
         ref.close();
         data_file.close();
         out_file.close();
