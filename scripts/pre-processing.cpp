@@ -244,10 +244,8 @@ int main(int argc, char* argv[]){
                         for(int j=0; j<ref_map[right_f].size();++j){
                             string ref_left;
                             //Check if the initial mapping position is less than 0
-                            int pos_s = ref_map[right_f].at(j).second-READ_LEN/2;
-                            if(pos_s < 0){
-                                pos_s = 0;
-                            }
+                            int pos_s = max(ref_map[right_f].at(j).second-READ_LEN/2,0);
+                            
                             assign(ref_left,infix(ref_sequences[ref_map[right_f].at(j).first],
                                                    pos_s,pos_s+READ_LEN/2));
                            
@@ -324,10 +322,8 @@ int main(int argc, char* argv[]){
                             for(int j=0; j<ref_map[right_f].size();++j){
                                 string ref_left;
                                 //Check if the initial mapping position is less than 0
-                                int pos_s = ref_map[right_f].at(j).second-READ_LEN/2;
-                                if(pos_s < 0){
-                                    pos_s = 0;
-                                }
+                                int pos_s = max(ref_map[right_f].at(j).second-READ_LEN/2,0);
+ 
                                 assign(ref_left,infix(ref_sequences[ref_map[right_f].at(j).first],
                                                       pos_s,pos_s+READ_LEN/2));
                            
