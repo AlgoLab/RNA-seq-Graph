@@ -11,6 +11,7 @@
 #include <sstream>
 #include <map>
 #include <set>
+#include <cassert>
 
 #include <seqan/sequence.h>
 #include <seqan/file.h>
@@ -105,12 +106,9 @@ int main(int argc, char* argv[]){
     std::map<unsigned long long, vector<pair<int,int > > > ref_map;
  
     if(data_file.is_open() && ref.is_open() && out_file.is_open() && not_mapped.is_open()){  
-        String<char> fasta_tag;
-        String<Dna5> read_seq;
+       
         std::vector<string> v;
         std::vector<String<char> > tags;
-        //Posizione del read nel vettore v
-        long num_read = 0;
 
         //Ref sequences
         long num_fing = 0;
@@ -118,6 +116,8 @@ int main(int argc, char* argv[]){
         clock_t tStart = clock();
     
         while(!ref.eof()){
+            String<char> fasta_tag;
+            String<Dna5> read_seq;
             //Tags
             readMeta(ref, fasta_tag, Fasta());
             string read_tag;
@@ -162,60 +162,89 @@ int main(int argc, char* argv[]){
         std::cerr << "Total Refseq Extracted Fingerprints: " << num_fing << std::endl;
         std::cerr << "Total Refseq Extracted Fingerprints Unique: " << ref_map.size() << std::endl << std::endl;
         
-        //Mapping
-        int found_neigh = 0;
-        
         //RNA-seq Reads
         tStart = clock();
         std::cerr << "Processing RNA-seq file..." << std::endl;
         read_size = 0;
         perc = 0;
         long tot_read = 0;
+        long num_seqs = 0;
+        bool read_terminated;
+#pragma omp parallel private(read_terminated) shared(tot_read,num_seqs)
         while(!data_file.eof()){
-            readMeta(data_file, fasta_tag, Fasta());
-            read(data_file, read_seq, Fasta());
-            read_size+=((length(fasta_tag)*sizeof(char))+(length(read_seq)*sizeof(char)));
-            if ((read_size/(double)file_dimension)*100 - 1 >= perc) {
-                perc++;
-                if(perc%10 == 0){
-                    std::cerr << "Processed: " << perc << "%" << std::endl;
+            String<char> fasta_tag;
+            String<Dna5> read_seq;
+#pragma omp critical(reading_reads)
+            {
+                read_terminated = data_file.eof();
+                if(!read_terminated){
+                    readMeta(data_file, fasta_tag, Fasta());
+                    read(data_file, read_seq, Fasta());
+                    read_size+=((length(fasta_tag)*sizeof(char))+(length(read_seq)*sizeof(char)));
+                    if ((read_size/(double)file_dimension)*100 - 1 >= perc) {
+                        perc++;
+                        if(perc%10 == 0){
+                            std::cerr << "Processed: " << perc << "%" << std::endl;
+                        }
+                    }
+                    //read_terminated = data_file.eof();
+                    read_terminated = length(read_seq)==0 || length(fasta_tag)==0;
                 }
+            }//End critical region reading_reads
+            if(read_terminated){
+                continue;
             }
+
+            assert(length(read_seq)>=READ_LEN);
+            num_seqs++;
             for(unsigned int i = 0;i<=length(read_seq)-READ_LEN;i++){ //All 64bp Reads
             //for(unsigned int i = 0;i<1;i++){ //Only 1Read: 1x75bp = 1x64bp
+            //for(unsigned int i=0, j=0;j<2;i+=length(read_seq)-READ_LEN,++j){ //First and last 64bp reads
                 string read;
                 assign(read,infix(read_seq,i,i+READ_LEN));
                 string read_tag;
                 assign(read_tag,fasta_tag);
-                tot_read++;
+#pragma omp critical(reads_number)
+                {
+                    //std::cerr << read << std::endl;
+                    //                    usleep(1000);
+                    tot_read++;
+                }
                 unsigned long long left_f = fingerprint(read.substr(0,READ_LEN/2));
                 unsigned long long right_f = fingerprint(read.substr(READ_LEN/2));
                 bool left_mapped = false;
                 bool right_mapped = false;
                 bool mapped = false;
+                bool both_mapped = false;
                 if(ref_map.find(left_f) != ref_map.end() && ref_map.find(right_f) != ref_map.end()){
                     //std::cout << "Caso 1" << std::endl;
                     //Insert in every gene 
-                    for(int i=0; i<ref_map[left_f].size(); ++i){
-                        for(int j=0; j<ref_map[right_f].size(); ++j){
+                    for(unsigned int i=0; i<ref_map[left_f].size(); ++i){
+                        for(unsigned int j=0; j<ref_map[right_f].size(); ++j){
                             if(ref_map[left_f][i].first == ref_map[right_f][j].first){
-                                out_file << ">";
-                                out_file << "l:" << genes[ref_map[left_f][i].first] << "|";
-                                out_file << "r:" << genes[ref_map[right_f][j].first] << std::endl;
-                                out_file << read << std::endl;
+#pragma omp critical(writing_reads)
+                                {
+                                    //usleep(5000);
+                                    out_file << ">";
+                                    out_file << "l:" << genes[ref_map[left_f][i].first] << "|";
+                                    out_file << "r:" << genes[ref_map[right_f][j].first] << std::endl;
+                                    out_file << read << std::endl;
+                                    both_mapped = true;
+                                    mapped = true;
+                                }
                             }
                         }
                     }
-                    mapped = true;
-                }else{
+                }
+                if(!both_mapped){
                     if(ref_map.find(left_f) != ref_map.end()){
                         //std::cout << "Caso 2" << std::endl;
                         mapped = true;
-                        for(int j=0; j<ref_map[left_f].size();++j){
+                        for(unsigned int j=0; j<ref_map[left_f].size();++j){
                             string ref_right;
                             //Check if the position is beyond the length of the Refseq sequence
-                            int pos_s = ref_map[left_f].at(j).second + (READ_LEN/2);
-                            int pos_e = ref_map[left_f].at(j).second + READ_LEN;
+                            unsigned int pos_s = ref_map[left_f].at(j).second + (READ_LEN/2);
+                            unsigned int pos_e = ref_map[left_f].at(j).second + READ_LEN;
                             if(pos_e > length(ref_sequences[ref_map[left_f].at(j).first])){
                                 pos_e = length(ref_sequences[ref_map[left_f].at(j).first]);
                             }
@@ -223,25 +252,33 @@ int main(int argc, char* argv[]){
                                                    pos_s,pos_e));
                                                       
                             if(levenshtein_distance(read.substr(READ_LEN/2),ref_right)<=1){
-                                out_file << ">";
-                                out_file << "l:" << genes[ref_map[left_f].at(j).first] << "|";
-                                out_file << "r:" << genes[ref_map[left_f].at(j).first] << std::endl;
-                                out_file << read.substr(0,READ_LEN/2) + ref_right << std::endl;
+#pragma omp critical(writing_reads)
+                                {
+                                    //usleep(5000);
+                                    out_file << ">";
+                                    out_file << "l:" << genes[ref_map[left_f].at(j).first] << "|";
+                                    out_file << "r:" << genes[ref_map[left_f].at(j).first] << std::endl;
+                                    out_file << read.substr(0,READ_LEN/2) + ref_right << std::endl;
+                                }
                                 left_mapped = true;
                             }
                         }
                         if(!left_mapped){
                             //All collisions are potential mappings
-                            for(int j=0; j<ref_map[left_f].size(); ++j){
-                                out_file << ">l:" << genes[ref_map[left_f].at(j).first] << "|r:no-mapping";
-                                out_file << read << std::endl;
+                            for(unsigned int j=0; j<ref_map[left_f].size(); ++j){
+#pragma omp critical(writing_reads)
+                                {
+                                    //usleep(5000);
+                                    out_file << ">l:" << genes[ref_map[left_f].at(j).first] << "|r:no-mapping";
+                                    out_file << read << std::endl;
+                                }
                             }
                         }
                     }
                     if(ref_map.find(right_f) != ref_map.end()){
                         //std::cout << "Caso 3" << std::endl;
                         mapped = true;
-                        for(int j=0; j<ref_map[right_f].size();++j){
+                        for(unsigned int j=0; j<ref_map[right_f].size();++j){
                             string ref_left;
                             //Check if the initial mapping position is less than 0
                             int pos_s = max(ref_map[right_f].at(j).second-READ_LEN/2,0);
@@ -250,93 +287,22 @@ int main(int argc, char* argv[]){
                                                    pos_s,pos_s+READ_LEN/2));
                            
                             if(levenshtein_distance(read.substr(0,READ_LEN/2),ref_left)<=1){
-                                out_file << ">l:" << genes[ref_map[right_f].at(j).first] << "|";
-                                out_file << "r:" << genes[ref_map[right_f].at(j).first] << std::endl;
-                                out_file << ref_left + read.substr(READ_LEN/2) << std::endl;
+#pragma omp critical(writing_reads)
+                                {
+                                    //usleep(5000);
+                                    out_file << ">l:" << genes[ref_map[right_f].at(j).first] << "|";
+                                    out_file << "r:" << genes[ref_map[right_f].at(j).first] << std::endl;
+                                    out_file << ref_left + read.substr(READ_LEN/2) << std::endl;
+                                }
                                 right_mapped = true;
                             }
                         }
                         if(!right_mapped){
                             //All collisions are potential mappings
-                            for(int j=0; j<ref_map[right_f].size(); ++j){
-                                out_file << ">l:no-mapping|r:" << genes[ref_map[right_f].at(j).first] << std::endl;
-                                out_file << read << std::endl;
-                            }
-                        }
-                    }
-                }
-                //If not mapped try the Reverse and Complement
-                if(!mapped){
-                    String<Dna5> rev_comp = Dna5StringReverseComplement(read);
-                    assign(read,rev_comp);
-                    left_f = fingerprint(read.substr(0,READ_LEN/2));
-                    right_f = fingerprint(read.substr(READ_LEN/2));
-                    if(ref_map.find(left_f) != ref_map.end() && ref_map.find(right_f) != ref_map.end()){
-                        //std::cout << "Caso 1 RC" << std::endl;
-                        //Insert in every gene 
-                        for(int i=0; i<ref_map[left_f].size(); ++i){
-                            for(int j=0; j<ref_map[right_f].size(); ++j){
-                                if(ref_map[left_f][i].first == ref_map[right_f][j].first){
-                                    out_file << ">";
-                                    out_file << "l:" << genes[ref_map[left_f][i].first] << "|";
-                                    out_file << "r:" << genes[ref_map[right_f][j].first] << std::endl;
-                                    out_file << read << std::endl;
-                                }
-                            }
-                        }
-                        mapped = true;
-                    }else{
-                        if(ref_map.find(left_f) != ref_map.end()){
-                            //std::cout << "Caso 2 RC" << std::endl;
-                            mapped = true;
-                            for(int j=0; j<ref_map[left_f].size();++j){
-                                string ref_right;
-                                //Check if the position is beyond the length of the Refseq sequence
-                                int pos_s = ref_map[left_f].at(j).second + (READ_LEN/2);
-                                int pos_e = ref_map[left_f].at(j).second + READ_LEN;
-                                if(pos_e > length(ref_sequences[ref_map[left_f].at(j).first])){
-                                    pos_e = length(ref_sequences[ref_map[left_f].at(j).first]);
-                                }
-                                assign(ref_right,infix(ref_sequences[ref_map[left_f].at(j).first],
-                                                       pos_s,pos_e));
-                            
-                                if(levenshtein_distance(read.substr(READ_LEN/2),ref_right)<=1){
-                                    out_file << ">";
-                                    out_file << "l:" << genes[ref_map[left_f].at(j).first] << "|";
-                                    out_file << "r:" << genes[ref_map[left_f].at(j).first] << std::endl;
-                                    out_file << read.substr(0,READ_LEN/2) + ref_right << std::endl;
-                                    left_mapped = true;
-                                }
-                            }
-                            if(!left_mapped){
-                                //All collisions are potential mappings
-                                for(int j=0; j<ref_map[left_f].size(); ++j){
-                                    out_file << ">l:" << genes[ref_map[left_f].at(j).first] << "|r:no-mapping";
-                                    out_file << read << std::endl;
-                                }
-                            }
-                        }
-                        if(ref_map.find(right_f) != ref_map.end()){
-                            //std::cout << "Caso 3 RC" << std::endl;
-                            mapped = true;
-                            for(int j=0; j<ref_map[right_f].size();++j){
-                                string ref_left;
-                                //Check if the initial mapping position is less than 0
-                                int pos_s = max(ref_map[right_f].at(j).second-READ_LEN/2,0);
- 
-                                assign(ref_left,infix(ref_sequences[ref_map[right_f].at(j).first],
-                                                      pos_s,pos_s+READ_LEN/2));
-                           
-                                if(levenshtein_distance(read.substr(0,READ_LEN/2),ref_left)<=1){
-                                    out_file << ">l:" << genes[ref_map[right_f].at(j).first] << "|";
-                                    out_file << "r:" << genes[ref_map[right_f].at(j).first] << std::endl;
-                                    out_file << ref_left + read.substr(READ_LEN/2) << std::endl;
-                                    right_mapped = true;
-                                }
-                            }
-                            if(!right_mapped){
-                                 //All collisions are potential mappings
-                                for(int j=0; j<ref_map[right_f].size(); ++j){
+                            for(unsigned int j=0; j<ref_map[right_f].size(); ++j){
+#pragma omp critical(writing_reads)
+                                {
+                                    //usleep(5000);
                                     out_file << ">l:no-mapping|r:" << genes[ref_map[right_f].at(j).first] << std::endl;
                                     out_file << read << std::endl;
                                 }
@@ -344,11 +310,117 @@ int main(int argc, char* argv[]){
                         }
                     }
                 }
+                //If not mapped try the Reverse and Complement
+                if(!mapped){
+                    String<Dna5> rev_comp = Dna5StringReverseComplement(read);
+                    string read_rev_comp;
+                    assign(read_rev_comp,rev_comp);
+                    left_f = fingerprint(read_rev_comp.substr(0,READ_LEN/2));
+                    right_f = fingerprint(read_rev_comp.substr(READ_LEN/2));
+                    if(ref_map.find(left_f) != ref_map.end() && ref_map.find(right_f) != ref_map.end()){
+                        //std::cout << "Caso 1 RC" << std::endl;
+                        //Insert in every gene 
+                        for(unsigned int i=0; i<ref_map[left_f].size(); ++i){
+                            for(unsigned int j=0; j<ref_map[right_f].size(); ++j){
+                                if(ref_map[left_f][i].first == ref_map[right_f][j].first){
+#pragma omp critical(writing_reads)
+                                    {
+                                        //usleep(5000);
+                                        out_file << ">";
+                                        out_file << "l:" << genes[ref_map[left_f][i].first] << "|";
+                                        out_file << "r:" << genes[ref_map[right_f][j].first] << std::endl;
+                                        out_file << read_rev_comp << std::endl;
+                                        both_mapped = true;
+                                        mapped = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if(!both_mapped){
+                        if(ref_map.find(left_f) != ref_map.end()){
+                            //std::cout << "Caso 2 RC" << std::endl;
+                            mapped = true;
+                            for(unsigned int j=0; j<ref_map[left_f].size();++j){
+                                string ref_right;
+                                //Check if the position is beyond the length of the Refseq sequence
+                                unsigned int pos_s = ref_map[left_f].at(j).second + (READ_LEN/2);
+                                unsigned int pos_e = ref_map[left_f].at(j).second + READ_LEN;
+                                if(pos_e > length(ref_sequences[ref_map[left_f].at(j).first])){
+                                    pos_e = length(ref_sequences[ref_map[left_f].at(j).first]);
+                                }
+                                assign(ref_right,infix(ref_sequences[ref_map[left_f].at(j).first],
+                                                       pos_s,pos_e));
+                            
+                                if(levenshtein_distance(read_rev_comp.substr(READ_LEN/2),ref_right)<=1){
+#pragma omp critical(writing_reads)
+                                    {
+                                        //usleep(5000);
+                                        out_file << ">";
+                                        out_file << "l:" << genes[ref_map[left_f].at(j).first] << "|";
+                                        out_file << "r:" << genes[ref_map[left_f].at(j).first] << std::endl;
+                                        out_file << read_rev_comp.substr(0,READ_LEN/2) + ref_right << std::endl;
+                                    }
+                                    left_mapped = true;
+                                }
+                            }
+                            if(!left_mapped){
+                                //All collisions are potential mappings
+                                for(unsigned int j=0; j<ref_map[left_f].size(); ++j){
+#pragma omp critical(writing_reads)
+                                    {
+                                        //usleep(5000);
+                                        out_file << ">l:" << genes[ref_map[left_f].at(j).first] << "|r:no-mapping";
+                                        out_file << read_rev_comp << std::endl;
+                                    }
+                                }
+                            }
+                        }
+                        if(ref_map.find(right_f) != ref_map.end()){
+                            //std::cout << "Caso 3 RC" << std::endl;
+                            mapped = true;
+                            for(unsigned int j=0; j<ref_map[right_f].size();++j){
+                                string ref_left;
+                                //Check if the initial mapping position is less than 0
+                                int pos_s = max(ref_map[right_f].at(j).second-READ_LEN/2,0);
+ 
+                                assign(ref_left,infix(ref_sequences[ref_map[right_f].at(j).first],
+                                                      pos_s,pos_s+READ_LEN/2));
+                           
+                                if(levenshtein_distance(read_rev_comp.substr(0,READ_LEN/2),ref_left)<=1){
+#pragma omp critical(writing_reads)
+                                    {
+                                        //usleep(5000);
+                                        out_file << ">l:" << genes[ref_map[right_f].at(j).first] << "|";
+                                        out_file << "r:" << genes[ref_map[right_f].at(j).first] << std::endl;
+                                        out_file << ref_left + read_rev_comp.substr(READ_LEN/2) << std::endl;
+                                    }
+                                    right_mapped = true;
+                                }
+                            }
+                            if(!right_mapped){
+                                 //All collisions are potential mappings
+                                for(unsigned int j=0; j<ref_map[right_f].size(); ++j){
+#pragma omp critical(writing_reads)
+                                    {
+                                        //usleep(5000);
+                                        out_file << ">l:no-mapping|r:" << genes[ref_map[right_f].at(j).first] << std::endl;
+                                        out_file << read_rev_comp << std::endl;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 //Not mapped: normal and Rev & Comp
                 if(!mapped){
-                    //std::cout << "Caso No Mapping" << std::endl;
-                    not_mapped << ">" << read_tag << std::endl;
-                    not_mapped << read_seq << std::endl;
+#pragma omp critical(writing_not_mapped)
+                    {
+                        //usleep(5000);
+                        //std::cout << "Caso No Mapping" << std::endl;
+                        not_mapped << ">" << read_tag << std::endl;
+                        not_mapped << read << std::endl;
+                    }
                 }
             }
         }
@@ -357,6 +429,7 @@ int main(int argc, char* argv[]){
         std::cerr << "Processing took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
         std::cerr << " seconds." << std::endl;
         std::cerr << "RNA-seq Extracted Reads: " << tot_read << std::endl;
+        std::cerr << "Processed RNA-seqs: " << num_seqs << std::endl;
         not_mapped.close();
         ref.close();
         data_file.close();
