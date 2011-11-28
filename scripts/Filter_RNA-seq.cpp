@@ -1,3 +1,28 @@
+/**
+* RNA-seq-Graph
+* Method for reconstructing the Isoform Graph of a gene from RNA-seq data, without the genome information
+*
+* Copyright (C) 2011 Stefano Beretta <ste.beretta(-at-)gmail.com>
+*
+* Distributed under the terms of the GNU Affero General Public License (AGPL)
+*
+*
+* This file is part of RNA-seq-Graph.
+*
+* RNA-seq-Graph is free software: you can redistribute it and/or modify
+* it under the terms of the GNU Affero General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* RNA-seq-Graph is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU Affero General Public License for more details.
+*
+* A full copy of the GNU Affero General Public License is reported into
+* the file COPYING. However more informations ca be found at
+* <http://www.gnu.org/licenses/>.
+**/
 /*
 Q: When I access files in SeqAn I get a warning: WARNING: FilePtr is not 64bit wide.
 A: Large file access is disabled. This is not a problem unless you access 4GB or larger files. 
@@ -16,7 +41,6 @@ to:
 
 Alternatively, you can add -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 to the g++ command line. 
 */
-
 #include <fstream>
 #include <iostream>
 #include <string>
