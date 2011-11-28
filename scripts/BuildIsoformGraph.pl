@@ -2,7 +2,8 @@
 
 ####
 #
-# Script che produce il grafo delle isoforme (STDOUT) dal file GTF dei trascritti (STDIN) dal file
+# Script che produce il grafo delle isoforme (STDOUT) dal file GTF dei trascritti (STDIN)
+# Produce anche in STDOUT i percorsi del grafo che corrispondono ai full-length transcripts contenuti nel GTF
 # Attenzione: nel gtf deve essere presente un solo gene! La genomica in input deve sempre essere sullo strand +
 #
 ####
@@ -19,6 +20,7 @@ my $gen_file;
 my $outIsoformFile;
 my $outIsoformFileRegions;
 my $outIsoformFileGDL;
+my $outIsoformPaths;
 my $min_length;
 my $force_strand;
 
@@ -30,7 +32,8 @@ GetOptions (
             'genomic=s' => \$gen_file, 
             'isoforms=s' => \$outIsoformFile,
             'isoforms-regions=s' => \$outIsoformFileRegions,
-            'isoforms-gdl=s' => \$outIsoformFileGDL,       
+            'isoforms-gdl=s' => \$outIsoformFileGDL,
+            'isoforms-paths=s' => \$outIsoformPaths,
             'force-on-plus-strand=i' => \$force_strand,
             'debug' => \$debug,
            );
@@ -51,6 +54,8 @@ my $usage="Usage: perl BuildIsoformGraph.pl [options]
  								(default: isoform-graph-regions.txt)
  --isoforms-gdl= <file>  	(optional) name of the output Isoform Graph file in GDL format
  								(default: isoform-graph.gdl)
+ --isoforms-paths= <file>  	(optional) name of the output Isoform Paths file
+ 								(default: isoform-paths.txt)
  --force-on-plus-strand= <integer>  (optional) flag for forcing the isoform graph on plus strand
  								(1: the graph is given on plus strand; 0: the graph is given on the gene strand)
  								(default: 0)
@@ -78,6 +83,9 @@ print "Output isoform graph file with regions: ", $outIsoformFileRegions, "\n";
 $outIsoformFileGDL="isoform-graph.gdl" if (not defined $outIsoformFileGDL or $outIsoformFileGDL eq '');
 print "Output GDL isoform graph file: ", $outIsoformFileGDL, "\n";
 
+$outIsoformPaths="isoform-paths.txt" if (not defined $outIsoformPaths or $outIsoformPaths eq '');
+print "Output isoform paths file: ", $outIsoformPaths, "\n";
+
 print "Path contraction: ", $contract_path, "\n";
 $min_length=0 if (not defined $min_length or $min_length < 0);
 if($contract_path == 2){
@@ -91,6 +99,7 @@ $gen_file=$wdir."/".$gen_file;
 $outIsoformFile=$wdir."/".$outIsoformFile;
 $outIsoformFileRegions=$wdir."/".$outIsoformFileRegions;
 $outIsoformFileGDL=$wdir."/".$outIsoformFileGDL;
+$outIsoformPaths=$wdir."/".$outIsoformPaths;
 
 for my $f (($gen_file, $gtfFile)){
     die "File $f does not exists\n" unless (-f $f);
@@ -99,6 +108,7 @@ for my $f (($gen_file, $gtfFile)){
 open OUT, ">$outIsoformFile" or die "Could not open $outIsoformFile: $!\n";
 open OUTREG, ">$outIsoformFileRegions" or die "Could not open $outIsoformFileRegions: $!\n";
 open OUTGDL, ">$outIsoformFileGDL" or die "Could not open $outIsoformFileGDL: $!\n";
+open OUTIP, ">$outIsoformPaths" or die "Could not open $outIsoformPaths: $!\n";
 
 open GEN, "<", $gen_file or die "Could not read $gen_file: $!\n";
 my $header=<GEN>;
@@ -109,12 +119,17 @@ while(<GEN>){
 	$gen_seq.=$_;
 }
 close GEN;
+$gen_seq=uc($gen_seq);
 my $gen_length=length($gen_seq);
 
 open GTF, $gtfFile or die "Could not open $gtfFile: $!\n";
 
 my $strand=1;
 my %exon_hash=();	#key=exon_start, value=hash_ref1(key=exon_end, value=hash_ref2(key=transcript_ID, value=1))
+
+my %full_lengths=(); #key=transcript_ID value list_ref(exon1_start, exon1_end, exon2_start, exon2_end, ...)
+my %exon_map=();	#key=exon_start, value=hash_ref1(key=exon_end, value=hash_ref(key=node value=dimensione))
+					#node è il nodo del grafo che risulta mappato all'esone
 while(<GTF>){
 	chomp;
 	my @record_list=split(/\s/, $_);
@@ -142,7 +157,7 @@ while(<GTF>){
 		if($record_list[6] eq "-"){
 			$strand=-1;
 		}
-		
+                
 		#Inversione per gene -
 		if($strand == -1 && $force_strand != 1){
 			$exon_start=$gen_length-$record_list[4]+1;
@@ -151,8 +166,32 @@ while(<GTF>){
 		else{
 			$exon_start=$record_list[3];
 			$exon_end=$record_list[4];
-		}	
-		
+                }
+
+                if(exists $full_lengths{$record_list[$k]}){
+			if($strand == 1){
+				push @{$full_lengths{$record_list[$k]}}, ($exon_start, $exon_end);
+			}else{
+				unshift @{$full_lengths{$record_list[$k]}}, ($exon_start, $exon_end);
+			}
+		}else{
+			$full_lengths{$record_list[$k]}=[$exon_start, $exon_end];
+		}
+		my %exon_map1;
+		if(exists $exon_map{$exon_start}){
+			%exon_map1=%{$exon_map{$exon_start}};
+			if(!exists $exon_map1{$exon_end}){
+				my %exon_map2=();
+				$exon_map1{$exon_end}=\%exon_map2;
+			}
+		}
+		else{
+			%exon_map1=();
+			my %exon_map2=();
+			$exon_map1{$exon_end}=\%exon_map2;
+		}
+		$exon_map{$exon_start}=\%exon_map1;
+                
 		my %exon_hash1;
 		if(exists $exon_hash{$exon_start}){
 			#print "\tEsiste start\n";
@@ -186,6 +225,12 @@ while(<GTF>){
 }
 
 close GTF;
+
+#foreach my $transcr_ID(keys %full_lengths){
+#	print $transcr_ID;
+#	print "\t", join("-", @{$full_lengths{$transcr_ID}}), "\n";
+#}
+
 
 print "The gene strand is ", ($strand == 1)?("PLUS"):("MINUS");
 my $cong=($strand == -1 && $force_strand == 1)?(" but"):(" and");
@@ -647,6 +692,8 @@ print OUTGDL "node.shape\t: circle\n";
 print OUTGDL "node.color\t: blue\n";
 print OUTGDL "node.height\t: 80\n";
 print OUTGDL "node.width\t: 80\n";
+
+my $max_index_node=1;
 foreach my $node_ref(@G_list){
 	my @region=@{$node_ref};
 
@@ -662,9 +709,36 @@ foreach my $node_ref(@G_list){
 			$dimension=$dimension+$chunks[$i+1]-$chunks[$i]+1;
 			
 			$chunk_seq=$chunk_seq.substr($gen_seq, $chunks[$i]-1, $chunks[$i+1]-$chunks[$i]+1);
+                        
+                        #print "Chunk ", $chunks[$i]."-".$chunks[$i+1], "(of node ", $region[7], ")\n";
+			
+			#Mapping agli esoni
+			foreach my $exon_start(keys %exon_map){
+				if($chunks[$i] >= $exon_start){
+					my %hash_temp=%{$exon_map{$exon_start}};
+					foreach my $exon_end(keys %hash_temp){
+						if($chunks[$i+1] <= $exon_end){
+							my %hash_temp2=%{$hash_temp{$exon_end}};
+							if(exists $hash_temp2{$region[7]}){
+								$hash_temp2{$region[7]}=$hash_temp2{$region[7]}+$dimension;
+							}else{
+								$hash_temp2{$region[7]}=$dimension;
+							}
+							
+							$hash_temp{$exon_end}=\%hash_temp2;
+							$exon_map{$exon_start}=\%hash_temp;	
+							#print "\tmap to exon $exon_start-$exon_end\n";
+						}					
+					}									
+				}
+			}
 			
 			$i+=2;	
-		}
+                }
+                
+		$max_index_node=($max_index_node < $region[7])?($region[7]):($max_index_node);
+		print OUTIP $region[7], "(", length($chunk_seq), ")\t";
+                
 		print OUT "node\#".$region[7]." ".$chunk_seq."\n";
 		print OUTREG "node\#".$region[7]." ".$title."\n";
 		
@@ -673,6 +747,8 @@ foreach my $node_ref(@G_list){
 		print OUTGDL "\t\tlabel: "."\"".$region[7]." - ".$dimension."\""."\n\t\}\n";
 	}
 }
+
+print OUTIP "\n";
 
 my $edge_index=1;
 foreach my $node_ref(@G_list){
@@ -717,6 +793,48 @@ print OUTGDL "\}\n";
 close OUT;
 close OUTREG;
 close OUTGDL;
+
+#Stampa percorsi compatibili con i full-lengths
+foreach my $transcript(keys %full_lengths){
+	
+	my @exons=@{$full_lengths{$transcript}};
+	my $i=0;
+	
+	my %path=();
+	
+	while($i <= $#exons){
+		my $exon_start=$exons[$i];
+		my $exon_end=$exons[$i+1];
+		
+		my %hash_map1=%{$exon_map{$exon_start}};
+		my %hash_map2=%{$hash_map1{$exon_end}};
+		my @nodes=keys %hash_map2;
+		
+		foreach my $node(@nodes){
+			$path{$node}=$hash_map2{$node};
+		}
+				
+		$i+=2;
+	}
+	
+	my @nodes=sort {$a <=> $b} keys %path;
+	
+	my $prev=1;
+	my $tabs=-1;
+	my $tab="\t";
+	foreach my $i(0..$#nodes){
+		$tabs=$nodes[$i]-$prev;
+		print OUTIP $tab x $tabs;
+		print OUTIP "x";
+		$prev=$nodes[$i];
+	}
+	$tabs=$max_index_node-$prev+1;
+	
+	print OUTIP $tab x $tabs;
+	print OUTIP $transcript, "\n";
+}
+
+close OUTIP;
 
 exit;
 
