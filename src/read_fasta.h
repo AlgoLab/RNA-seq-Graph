@@ -4,22 +4,22 @@
 *
 * Copyright (C) 2011 Stefano Beretta <ste.beretta(-at-)gmail.com>
 *
-* Distributed under the terms of the GNU General Public License (GPL)
+* Distributed under the terms of the GNU Affero General Public License (AGPL)
 *
 *
 * This file is part of RNA-seq-Graph.
 *
 * RNA-seq-Graph is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
+* it under the terms of the GNU Affero General Public License as published by
 * the Free Software Foundation, either version 3 of the License, or
 * (at your option) any later version.
 *
 * RNA-seq-Graph is distributed in the hope that it will be useful,
 * but WITHOUT ANY WARRANTY; without even the implied warranty of
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
+* GNU Affero General Public License for more details.
 *
-* A full copy of the GNU General Public License is reported into
+* A full copy of the GNU Affero General Public License is reported into
 * the file COPYING. However more informations ca be found at
 * <http://www.gnu.org/licenses/>.
 **/
