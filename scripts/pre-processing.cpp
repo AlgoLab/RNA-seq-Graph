@@ -222,9 +222,13 @@ int main(int argc, char* argv[]){
 
             assert(length(read_seq)>=READ_LEN);
             num_seqs++;
+#if defined(ONE_READ)
+            for(unsigned int i = 0;i<1;i++){ //Only 1Read: 1x75bp = 1x64bp
+#elif defined(TWO_READS)
+            for(unsigned int i=0, j=0;j<2;i+=length(read_seq)-READ_LEN,++j){ //First and last 64bp reads
+#else
             for(unsigned int i = 0;i<=length(read_seq)-READ_LEN;i++){ //All 64bp Reads
-            //for(unsigned int i = 0;i<1;i++){ //Only 1Read: 1x75bp = 1x64bp
-            //for(unsigned int i=0, j=0;j<2;i+=length(read_seq)-READ_LEN,++j){ //First and last 64bp reads
+#endif
                 string read;
                 assign(read,infix(read_seq,i,i+READ_LEN));
                 string read_tag;
