@@ -537,7 +537,7 @@ foreach my $dir(@lists){
 		foreach my $q(0..$#GF_node_list){
 			my @list=@{$GF_node_list[$q]};
 			print OUT $q+1, "(", length($list[0]), ") ";
-                        print GNUPLOT "set object ", $tot_len, " rect from ", $last_inserted, ",-10 to ", $last_inserted + POSIX::ceil(length($list[0])/$tot_len), ",10 fc lt 3 lw 1 front\n";
+                        print GNUPLOT "set object ", $q+1, " rect from ", $last_inserted, ",-10 to ", $last_inserted + POSIX::ceil(length($list[0])/$tot_len), ",10 fc lt 3 lw 1 front\n";
                         $last_inserted = $last_inserted + POSIX::ceil(length($list[0])/$tot_len)+1;
 		}
 		print OUT "\n#GR_BLOCKS\n";
