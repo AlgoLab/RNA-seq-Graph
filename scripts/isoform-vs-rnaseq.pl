@@ -101,7 +101,7 @@ foreach my $dir(@lists){
 		my $current_RNASeqG=$current_dir."/".$RNASeqG;
 		my $current_out_file=$current_dir."/".$out_file;
 		my $current_log_file=$current_dir."/".$log_file;
-                my $current_gnuplot_file=$current_dir."/".gnuplot_file;
+                my $current_gnuplot_file=$current_dir."/".$gnuplot_file;
 		
 		my $next_iter=0;
 		
