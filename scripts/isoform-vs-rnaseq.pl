@@ -527,6 +527,7 @@ foreach my $dir(@lists){
                 print GNUPLOT "set style line 2 lt rgb \"red\" lw 4\n\n";
                 my $tot_len = 0;
                 foreach my $q(0..$#GF_node_list){
+                  my @list=@{$GF_node_list[$q]};
                   $tot_len += length($list[0]);
                 }
 		print OUT "#GF_BLOCKS\n";
