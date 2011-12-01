@@ -12,6 +12,7 @@ my $log_file;
 my $f_length;
 my $f_offset;
 my $mapping_threshold;
+my $gnuplot_file;
 
 GetOptions (
 			'working-dir=s' => \$wdir,
@@ -22,6 +23,7 @@ GetOptions (
             'fingerp-length=i' => \$f_length,
             'fingerp-offset=i' => \$f_offset,
             'mapping-threshold=i' => \$mapping_threshold,
+            'gnuplot-file=i' => \$gnuplot_file,
             'debug' => \$debug,
            );
 my $usage="Usage: perl isoform-vs-rnaseq2.pl [options]
@@ -38,6 +40,8 @@ my $usage="Usage: perl isoform-vs-rnaseq2.pl [options]
  								(default: GRvsGFlog.txt)
  --mapping-threshold	     (optional) maximum threshold for border mapping (>= 0)
  								(default: 2)
+ --gnuplot-file=<file>       name of the Gnuplot script file
+                                         (default: gnuplot-script.gnu)
  --debug                     emits debugging information
 ";
 
@@ -63,6 +67,9 @@ print "Output file: ", $out_file, "\n";
 
 $log_file="GRvsGFlog.txt" if (not defined $log_file or $log_file eq '');
 print "Log file: ", $log_file, "\n";
+
+$gnuplot_file="gnuplot-scirpt.gnu" if(not defined $gnuplot_file or $gnuplot_file eq '');
+print "Gnuplot file: " ,$gnuplot_file, "\n";
 
 print "Fingerprinting length: ", $f_length, "\n"; 
 print "Fingerprinting offset: ", ($f_offset == -1)?("all the sequence"):($f_offset), "\n"; 
@@ -94,6 +101,7 @@ foreach my $dir(@lists){
 		my $current_RNASeqG=$current_dir."/".$RNASeqG;
 		my $current_out_file=$current_dir."/".$out_file;
 		my $current_log_file=$current_dir."/".$log_file;
+                my $current_gnuplot_file=$current_dir."/".gnuplot_file;
 		
 		my $next_iter=0;
 		
@@ -113,6 +121,7 @@ foreach my $dir(@lists){
 		
 		open OUT, ">$current_out_file" or die "Could not open $current_out_file: $!\n";
 		open LOG, ">$current_log_file" or die "Could not open $current_log_file: $!\n";
+                open GNUPLOT, ">$current_gnuplot_file" or die "Could not open $current_gnuplot_file: $!\n";
 		
 		open GF, "<", $current_fileIsoformG or die "Could not read $current_fileIsoformG: $!\n";
 		
@@ -510,11 +519,23 @@ foreach my $dir(@lists){
 				}
 			}
 		}
-		
+                #Print Gnuplot script file
+                print GNUPLOT "set term post dash size 9,6 \"Verdana\"\n";
+                print GNUPLOT "set title \"Gene - \"\n";
+                print GNUPLOT "set output 'Graph.pdf'\n\n";
+                print GNUPLOT "set style line 1 lt rgb \"black\" lw 4\n";
+                print GNUPLOT "set style line 2 lt rgb \"red\" lw 4\n\n";
+                my $tot_len = 0;
+                foreach my $q(0..$#GF_node_list){
+                  $tot_len += length($list[0]);
+                }
 		print OUT "#GF_BLOCKS\n";
+                my $last_inserted = 0;
 		foreach my $q(0..$#GF_node_list){
 			my @list=@{$GF_node_list[$q]};
 			print OUT $q+1, "(", length($list[0]), ") ";
+                        print GNUPLOT "set object ", $q+1, " rect from ", $last_inserted, ",-10 to ", (length($list[0])/$tot_len), ",10 fc lt 3 lw 1 front\n";
+                        $last_inserted += (length($list[0])/$tot_len)+1;
 		}
 		print OUT "\n#GR_BLOCKS\n";
 		foreach my $q(0..$#GR_node_list){
@@ -537,6 +558,8 @@ foreach my $dir(@lists){
 		
 		print $GR_edge_num, "\t", $GF_edge_num, "\t", $GR_match_edges, "\t", $GR_map_edges, "\t", $GF_map_edges, "\t";
 		print "\n";
+
+                print GNUPLOT "plot [-1:110][-11:11] 0 lt rgb \"blue\" lw 3";
 					
 		close OUT;
 		close LOG;
@@ -819,7 +842,7 @@ sub print_node_variations {
     	}    	
     }
     print FH "\n";
-}
+  }
 
 sub get_fingerprinting {
 	my $node_list_ref=shift;
