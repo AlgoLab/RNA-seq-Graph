@@ -13,7 +13,7 @@ my $log_file;
 my $f_length;
 my $f_offset;
 my $mapping_threshold;
-my $gnuplot_file;
+my $gnuplot_file = "gnuplot-script.gnu";
 
 GetOptions (
 			'working-dir=s' => \$wdir,
@@ -68,9 +68,6 @@ print "Output file: ", $out_file, "\n";
 
 $log_file="GRvsGFlog.txt" if (not defined $log_file or $log_file eq '');
 print "Log file: ", $log_file, "\n";
-
-$gnuplot_file="gnuplot-scirpt.gnu" if(not defined $gnuplot_file or $gnuplot_file eq '');
-print "Gnuplot file: " ,$gnuplot_file, "\n";
 
 print "Fingerprinting length: ", $f_length, "\n"; 
 print "Fingerprinting offset: ", ($f_offset == -1)?("all the sequence"):($f_offset), "\n"; 
@@ -524,22 +521,54 @@ foreach my $dir(@lists){
                 print GNUPLOT "set term post dash size 9,6 \"Verdana\"\n";
                 print GNUPLOT "set title \"Gene - \"\n";
                 print GNUPLOT "set output 'Graph.pdf'\n\n";
-                print GNUPLOT "set style line 1 lt rgb \"black\" lw 4\n";
-                print GNUPLOT "set style line 2 lt rgb \"red\" lw 4\n\n";
+                print GNUPLOT "set style line 1 lt rgb \"black\" lw 3\n";
+                print GNUPLOT "set style line 2 lt rgb \"red\" lw 3\n\n";
                 my $tot_len = 0;
                 foreach my $q(0..$#GF_node_list){
                   my @list=@{$GF_node_list[$q]};
                   $tot_len = $tot_len + length($list[0]);
                 }
                 
+                
 		print OUT "#GF_BLOCKS\n";
                 my $last_inserted = 0;
+                my $space_len= POSIX::ceil($tot_len/100*2);
+                my @c_begin = ();
+                my @c_end = ();
 		foreach my $q(0..$#GF_node_list){
-			my @list=@{$GF_node_list[$q]};
-			print OUT $q+1, "(", length($list[0]), ") ";
-                        print GNUPLOT "set object ", $q+1, " rect from ", $last_inserted, ",-10 to ", $last_inserted + POSIX::ceil(length($list[0])/$tot_len), ",10 fc lt 3 lw 1 front\n";
-                        $last_inserted = $last_inserted + POSIX::ceil(length($list[0])/$tot_len)+1;
-		}
+                  my @list=@{$GF_node_list[$q]};
+                  print OUT $q+1, "(", length($list[0]), ") ";
+                  my $this_end= $last_inserted + length($list[0]);
+                  print GNUPLOT "set object ", $q+1, " rect from $last_inserted,-1 to $this_end,1 fc lt 3 lw 1 front\n";
+                  push @c_begin, $last_inserted;
+                  push @c_end, $this_end;
+                  $last_inserted = $this_end + $space_len;
+                }
+                my $max_intron = 0;
+                for(my $i=0; $i < $count_GF_node; $i++){
+                  for(my $j=0; $j < $count_GF_node; $j++){
+                    if($GF_adj_matx->[$i][$j] == 1){
+                      my $diff = ($c_begin[$j] - $c_end[$i]);
+                      if($diff > $max_intron){
+                        $max_intron = $diff;
+                      }
+                    }
+                  }
+                }
+                my $max_h= 0;
+                for(my $i=0; $i < $count_GF_node; $i++){
+                  for(my $j=0; $j < $count_GF_node; $j++){
+                    if($GF_adj_matx->[$i][$j] == 1){
+                      my $diff = ($c_begin[$j] - $c_end[$i])/2;
+                      my $height = ($diff / $max_intron)*10 + 1;
+                      print GNUPLOT "set arrow from $c_end[$i],1 to ", $c_end[$i]+$diff,",$height nohead ls 1\n";
+                      print GNUPLOT "set arrow from ",$c_end[$i]+$diff,",$height to $c_begin[$j],1 nohead ls 1\n";
+                      if($height > $max_h){
+                        $max_h = $height;
+                      }
+                    }
+                  }
+                }
 		print OUT "\n#GR_BLOCKS\n";
 		foreach my $q(0..$#GR_node_list){
 			my @list=@{$GR_node_list[$q]};
@@ -550,11 +579,29 @@ foreach my $dir(@lists){
 		print_node_variations(\@GF_node_list, 1, $GR_adj_matx, \*OUT, $gene, $count_GR_node, \@GR_node_list);
 		
 		print OUT "#NEW_GR_LINKS\n";
+                my $max_new_h = 0;
 		my @compl_new_edges=keys %completely_new_edges;
 		foreach my $e(@compl_new_edges){
-			if($completely_new_edges{$e} == 1){
-				print OUT $e, " ";
-			}
+                  if($completely_new_edges{$e} == 1){
+                    print OUT $e, " ";
+                    $e =~ m/\(([0-9]+),([0-9]+)\)/;
+                    my $start= ($1)-1;
+                    my $end= ($2)-1;
+                    if($start <= $#GF_node_list && $end <= $#GF_node_list){
+                      if($start > $end){
+                        my $tmp = $start;
+                        $start = $end;
+                        $end = $tmp;
+                      }
+                      my $diff = ($c_begin[$end] - $c_end[$start])/2;
+                      my $height = ($diff / $max_intron)*10 + 1;
+                      print GNUPLOT "set arrow from $c_end[$start],-1 to ", $c_end[$start]+$diff,",-$height nohead ls 2\n";
+                      print GNUPLOT "set arrow from ",$c_end[$start]+$diff,",-$height to $c_begin[$end],-1 nohead ls 2\n";
+                      if($height > $max_new_h){
+                        $max_new_h = $height;
+                      }
+                    }
+                  }
 		}
 		print OUT "\n";
 		#print OUT join(",", @compl_new_edges), "\n";
@@ -562,7 +609,7 @@ foreach my $dir(@lists){
 		print $GR_edge_num, "\t", $GF_edge_num, "\t", $GR_match_edges, "\t", $GR_map_edges, "\t", $GF_map_edges, "\t";
 		print "\n";
 
-                print GNUPLOT "plot [-1:110][-11:11] 0 lt rgb \"blue\" lw 3";
+                print GNUPLOT "plot [-1:$last_inserted][-",$max_new_h+1,":",$max_h+1,"] 0 lt rgb \"blue\" lw 3\n";
 					
 		close OUT;
 		close LOG;
