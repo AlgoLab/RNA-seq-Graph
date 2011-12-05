@@ -528,7 +528,7 @@ foreach my $dir(@lists){
                   my @list=@{$GF_node_list[$q]};
                   $tot_len = $tot_len + length($list[0]);
                 }
-                
+                my $gnuplot_objs = 0;
                 
 		print OUT "#GF_BLOCKS\n";
                 my $last_inserted = 0;
@@ -539,7 +539,8 @@ foreach my $dir(@lists){
                   my @list=@{$GF_node_list[$q]};
                   print OUT $q+1, "(", length($list[0]), ") ";
                   my $this_end= $last_inserted + length($list[0]);
-                  print GNUPLOT "set object ", $q+1, " rect from $last_inserted,-1 to $this_end,1 fc lt 3 lw 1 front\n";
+                  $gnuplot_objs = $gnuplot_objs + 1;
+                  print GNUPLOT "set object $gnuplot_objs rect from $last_inserted,0 to $this_end,1 fc lt 3 lw 1 front\n";
                   push @c_begin, $last_inserted;
                   push @c_end, $this_end;
                   $last_inserted = $this_end + $space_len;
@@ -576,7 +577,7 @@ foreach my $dir(@lists){
 		}
 		print OUT "\n";
 		
-		print_node_variations(\@GF_node_list, 1, $GR_adj_matx, \*OUT, $gene, $count_GR_node, \@GR_node_list);
+		print_node_variations(\@GF_node_list, 1, $GR_adj_matx, \*OUT, $gene, $count_GR_node, \@GR_node_list, \@c_begin, $gnuplot_objs, \$last_inserted);
 		
 		print OUT "#NEW_GR_LINKS\n";
                 my $max_new_h = 0;
@@ -595,8 +596,8 @@ foreach my $dir(@lists){
                       }
                       my $diff = ($c_begin[$end] - $c_end[$start])/2;
                       my $height = ($diff / $max_intron)*10 + 1;
-                      print GNUPLOT "set arrow from $c_end[$start],-1 to ", $c_end[$start]+$diff,",-$height nohead ls 2\n";
-                      print GNUPLOT "set arrow from ",$c_end[$start]+$diff,",-$height to $c_begin[$end],-1 nohead ls 2\n";
+                      #print GNUPLOT "set arrow from $c_end[$start],0 to ", $c_end[$start]+$diff,",-$height nohead ls 2\n";
+                      #print GNUPLOT "set arrow from ",$c_end[$start]+$diff,",-$height to $c_begin[$end],0 nohead ls 2\n";
                       if($height > $max_new_h){
                         $max_new_h = $height;
                       }
@@ -742,6 +743,9 @@ sub print_node_variations {
     my $gene=shift;
     my $count_node=shift;	#if $is_GF_node is true, this is the number of nodes in GR (and viceversa)
     my $node_list_ref2=shift; #Nodel list of GR if $is_GF_node is true (and viceversa)
+    my $start_GF=shift;
+    my $n_obj=shift;
+    my $last_inserted=shift;
     my @node_list2=@{$node_list_ref2};
     
     #for $is_GF_node=1 the new nodes are in GR (and viceversa)
@@ -829,7 +833,7 @@ sub print_node_variations {
 			}
 			$p++;
 		}
-		
+                
 		my @offsets=sort {$a <=> $b} keys %variant_node_offs;
 		#my @new_blocks=();
 		#foreach my $off(@offsets){
@@ -860,6 +864,11 @@ sub print_node_variations {
 						print FH "GF";
 					}
 					print FH "#", $n, "[", ($off+1), ",", ($off+$l), "] ";
+                                        $n_obj = $n_obj + 1;
+                                        print GNUPLOT "set object ", $n_obj, " rect from ", ($start_GF->[$i])+($off+1),",-1 to ",$start_GF->[$i]+($off+$l),",0 fc lt 2 lw 1 front\n";
+                                        if(($start_GF->[$i])+($off+1) > $$last_inserted){
+                                          $$last_inserted = ($start_GF->[$i])+($off+1);
+                                        }
 				}
 			}
 			
