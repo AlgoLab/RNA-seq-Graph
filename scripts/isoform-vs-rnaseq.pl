@@ -24,7 +24,7 @@ GetOptions (
             'fingerp-length=i' => \$f_length,
             'fingerp-offset=i' => \$f_offset,
             'mapping-threshold=i' => \$mapping_threshold,
-            'gnuplot-file=i' => \$gnuplot_file,
+            'gnuplot-file=s' => \$gnuplot_file,
             'debug' => \$debug,
            );
 my $usage="Usage: perl isoform-vs-rnaseq2.pl [options]
@@ -317,6 +317,18 @@ foreach my $dir(@lists){
 			
 		print "$gene\t";
 		
+		#Rimuove il mapping per i nodi piccoli (modifica introdotta il 13 dic 2011)
+		my $GF_node_list_ref1=mapremove_micro_nodes(\@GF_node_list, 5, 1, \*LOG);
+		my $GR_node_list_ref1=mapremove_micro_nodes(\@GR_node_list, 5, 0, \*LOG);
+		@GF_node_list=@{$GF_node_list_ref1};
+		@GR_node_list=@{$GR_node_list_ref1};
+		
+		#Sistema i nodi piccoli (modifica introdotta il 12 dic 2011)
+		my $GF_node_list_ref2=handle_small_nodes(\@GF_node_list, 10, 1, \*LOG);
+		my $GR_node_list_ref2=handle_small_nodes(\@GR_node_list, 10, 0, \*LOG);
+		@GF_node_list=@{$GF_node_list_ref2};
+		@GR_node_list=@{$GR_node_list_ref2};		
+		
 		#PRINT GR to GF node mapping
 		print OUT "GR to GF node mapping\n";
 		my $GRtoGF_match_ref=print_node_mapping(\@GR_node_list, 0, \*OUT, $gene);
@@ -372,8 +384,8 @@ foreach my $dir(@lists){
 			for(my $j=0; $j < $count_GR_node; $j++){
 				if($GR_adj_matx->[$i][$j] == 1){
 					print OUT "\tGR edge (", $i+1, ",", $j+1, ") =>";
-					my $completely_new_edge="(".($i+1).",".($j+1).")";
-					$completely_new_edges{$completely_new_edge}=1;
+					my $GR_edge="(".($i+1).",".($j+1).")";
+					$completely_new_edges{$GR_edge}="";
 							
 					$GR_edge_num++;
 					
@@ -433,16 +445,17 @@ foreach my $dir(@lists){
 							my $eGF_node=$end_mapping_GF_nodes[$p];
 							if($sGF_node == $eGF_node){
 								print OUT " contr(", $sGF_node+1, ")";
-								$completely_new_edges{$completely_new_edge}=0;
+								
 							}
 							else{
 								if($GF_adj_matx->[$sGF_node][$eGF_node] == 1){
 									print OUT " val(", $sGF_node+1, ",", $eGF_node+1, ") ";
-									$completely_new_edges{$completely_new_edge}=0;					
+										
 								}
 								else{
-									#my $completely_new_edge="(".($i+1).",".($j+1).")";
-									#$completely_new_edges{$completely_new_edge}=1;
+									my $new_GF_edge="(".($sGF_node+1).",".($eGF_node+1).")";
+									#$new_GF_edge does not exists in the GF graph and is labelled as new
+									$completely_new_edges{$GR_edge}=$new_GF_edge;
 								}
 							}
 						}
@@ -519,8 +532,12 @@ foreach my $dir(@lists){
 		}
                 #Print Gnuplot script file
                 print GNUPLOT "set term post dash size 9,6 \"Verdana\"\n";
-                print GNUPLOT "set title \"Gene - \"\n";
-                print GNUPLOT "set output 'Graph.pdf'\n\n";
+                print GNUPLOT "set title \"Gene - $gene\"\n";
+		print GNUPLOT "set key off\n";
+		print GNUPLOT "unset ytics\n";
+		my $ps_file = $gnuplot_file;
+		$ps_file =~ s/\.[^\.]*$//;
+                print GNUPLOT "set output '$ps_file.ps'\n\n";
                 print GNUPLOT "set style line 1 lt rgb \"black\" lw 3\n";
                 print GNUPLOT "set style line 2 lt rgb \"red\" lw 3\n\n";
                 my $tot_len = 0;
@@ -576,16 +593,16 @@ foreach my $dir(@lists){
 			print OUT $q+1, "(", length($list[0]), ") ";
 		}
 		print OUT "\n";
+		my $max_new_h = 0;
+		print_node_variations(\@GF_node_list, 1, $GR_adj_matx, \*OUT, $gene, $count_GR_node, \@GR_node_list, \@c_begin, \@c_end, $gnuplot_objs, \$last_inserted, $max_intron, \$max_new_h);
 		
-		print_node_variations(\@GF_node_list, 1, $GR_adj_matx, \*OUT, $gene, $count_GR_node, \@GR_node_list, \@c_begin, $gnuplot_objs, \$last_inserted);
-		
-		print OUT "#NEW_GR_LINKS\n";
-                my $max_new_h = 0;
+		print OUT "#NEW_LINKS\n";	#In GR wrt GF
+                
 		my @compl_new_edges=keys %completely_new_edges;
 		foreach my $e(@compl_new_edges){
-                  if($completely_new_edges{$e} == 1){
-                    print OUT $e, " ";
-                    $e =~ m/\(([0-9]+),([0-9]+)\)/;
+                  if($completely_new_edges{$e} ne ""){
+                    print OUT $completely_new_edges{$e}, " ";
+                    $completely_new_edges{$e} =~ m/\(([0-9]+),([0-9]+)\)/;
                     my $start= ($1)-1;
                     my $end= ($2)-1;
                     if($start <= $#GF_node_list && $end <= $#GF_node_list){
@@ -596,10 +613,10 @@ foreach my $dir(@lists){
                       }
                       my $diff = ($c_begin[$end] - $c_end[$start])/2;
                       my $height = ($diff / $max_intron)*10 + 1;
-                      #print GNUPLOT "set arrow from $c_end[$start],0 to ", $c_end[$start]+$diff,",-$height nohead ls 2\n";
-                      #print GNUPLOT "set arrow from ",$c_end[$start]+$diff,",-$height to $c_begin[$end],0 nohead ls 2\n";
-                      if($height > $max_new_h){
-                        $max_new_h = $height;
+                      print GNUPLOT "set arrow from $c_end[$start],1 to ", $c_end[$start]+$diff,",$height nohead ls 2\n";
+                      print GNUPLOT "set arrow from ",$c_end[$start]+$diff,",$height to $c_begin[$end],1 nohead ls 2\n";
+                      if($height > $max_h){
+                        $max_h = $height;
                       }
                     }
                   }
@@ -671,16 +688,18 @@ sub print_node_mapping {
 			foreach my $key(keys %mapping_hash){
 				my %hash_temp=%{$mapping_hash{$key}};
 				foreach my $offs(keys %hash_temp){
-					print FH " map(";
-					print FH $key+1;
-					print FH "[";
 					my @off_list=@{$hash_temp{$offs}};
-					print FH $offs, ",", $off_list[0], ",", $off_list[1];
-					print FH "]";
-					print FH ")";
+					if(scalar(@off_list) == 2 || $off_list[2] == 1){
+						print FH " map(";
+						print FH $key+1;
+						print FH "[";
+						print FH $offs, ",", $off_list[0], ",", $off_list[1];
+						print FH "]";
+						print FH ")";
 					
-					if($offs <= $mapping_threshold && $off_list[1] <= $mapping_threshold){
-						$match_hash{$key}=1;
+						if($offs <= $mapping_threshold && $off_list[1] <= $mapping_threshold){
+							$match_hash{$key}=1 if(scalar(@off_list) == 2 || $off_list[2] == 1);
+						}
 					}	
 				}
 			}
@@ -710,17 +729,19 @@ sub print_node_mapping {
 			foreach my $key(keys %mapping_contained_hash){
 				my %hash_temp=%{$mapping_contained_hash{$key}};
 				foreach my $offs(keys %hash_temp){
-					print FH " contain(";
-					print FH $key+1;
-					print FH "[";
 					my @off_list=@{$hash_temp{$offs}};
-					print FH $offs, ",", $off_list[0], ",", $off_list[1];
-					print FH "]";
-					print FH ")";
+					if(scalar(@off_list) == 2 || $off_list[2] == 1){
+						print FH " contain(";
+						print FH $key+1;
+						print FH "[";
+						print FH $offs, ",", $off_list[0], ",", $off_list[1];
+						print FH "]";
+						print FH ")";
 					
-					if($offs <= $mapping_threshold && $off_list[1] <= $mapping_threshold){
-						$match_hash{$key}=1;
-					}	
+						if($offs <= $mapping_threshold && $off_list[1] <= $mapping_threshold){
+							$match_hash{$key}=1;
+						}
+					}
 				}
 			}
 		}
@@ -734,6 +755,161 @@ sub print_node_mapping {
 	return \%match_nodes;
 }
 
+sub handle_small_nodes {
+    my $node_list_ref=shift;
+    my @node_list=@{$node_list_ref};
+    my $small_length=shift;
+    my $is_GF=shift;
+    local *FH=shift;
+          
+ 	for(my $i=0; $i <= $#node_list; $i++){
+		my @node=@{$node_list[$i]};
+		my $node_seq=$node[0];
+
+		#DA METTERE COME PARAMETRO??
+		if(length($node_seq) < $small_length){
+			if($is_GF){
+				print FH "GF#";
+			}else{
+				print FH "GR#";
+			}
+			print FH ($i+1), " is a small node\n";
+
+			my %mapping_hash=%{$node[1]};
+			my %mapping_cut_hash=%{$node[2]};
+			my %mapping_contained_hash=%{$node[3]};
+
+			my $key_min_length=-1;
+			my $min_length=-1;
+			foreach my $key(keys %mapping_hash){
+				
+				my %hash_temp=%{$mapping_hash{$key}};
+				my @all_keys=keys %hash_temp;
+				my $first_key=$all_keys[0];
+				my @off_list=@{$hash_temp{$first_key}};
+				my $length=$first_key+$off_list[0]+$off_list[1];
+				if($key_min_length == -1 || $length < $min_length){
+					$key_min_length=$key;
+					$min_length=$length;
+				}
+			}
+			my $all=1;
+			
+			foreach my $key(keys %mapping_hash){
+				
+				if($key != $key_min_length){
+					delete ($mapping_hash{$key});
+				}else{
+					
+					$all=0;
+				}
+			}
+			if($all == 1){
+				%mapping_hash=();
+			}
+
+			$node[1]=\%mapping_hash;
+
+			my $key_max_length=-1;
+			my $max_length=-1;
+			foreach my $key(keys %mapping_contained_hash){
+				my %hash_temp=%{$mapping_contained_hash{$key}};
+				my @all_keys=keys %hash_temp;
+				my $first_key=$all_keys[0];
+				my @off_list=@{$hash_temp{$first_key}};
+				my $length=$off_list[0];
+				if($key_max_length == -1 || $length > $max_length){
+					$key_max_length=$key;
+					$max_length=$length;
+				}
+			}
+			$all=1;
+			
+			foreach my $key(keys %mapping_contained_hash){
+				if($key != $key_max_length){
+					delete ($mapping_contained_hash{$key});
+				}else{
+					$all=0;
+				}
+			}
+			if($all == 1){
+				%mapping_contained_hash=();
+			}
+
+			$node[3]=\%mapping_contained_hash;
+			$node[2]=\%mapping_cut_hash;
+		}
+		$node_list[$i]=\@node;
+	}
+	
+	return \@node_list;
+}
+
+sub mapremove_micro_nodes {
+    my $node_list_ref=shift;
+    my @node_list=@{$node_list_ref};
+    my $micro_length=shift;
+    my $is_GF=shift;
+    local *FH=shift;
+            
+ 	for(my $i=0; $i <= $#node_list; $i++){
+		my @node=@{$node_list[$i]};
+		my $node_seq=$node[0];
+
+		my %mapping_hash=%{$node[1]};
+		my %mapping_cut_hash=%{$node[2]};
+		my %mapping_contained_hash=%{$node[3]};
+
+		if(length($node_seq) < $micro_length){
+			if($is_GF){
+				print FH "GF#";
+			}else{
+				print FH "GR#";
+			}
+			print FH ($i+1), " is a micro node and has been removed from the mapping\n";
+			%mapping_hash=();
+			%mapping_cut_hash=();
+			%mapping_contained_hash=();
+		}else{
+			my $all=1;
+			foreach my $key(keys %mapping_contained_hash){
+				my %hash_temp=%{$mapping_contained_hash{$key}};
+				my @all_keys=keys %hash_temp;
+				my $first_key=$all_keys[0];
+				my @off_list=@{$hash_temp{$first_key}};
+				my $length=$off_list[0];
+				if($length < $micro_length){
+					if($is_GF){
+						print FH "GR#";
+					}else{
+						print FH "GF#";
+					}
+					print FH $key, " is a micro node and has been removed from the containment of ";
+					if($is_GF){
+						print FH "GF#", ($i+1), "\n";
+					}else{
+						print FH "GR#", ($i+1), "\n";
+					}
+					delete ($mapping_contained_hash{$key});
+				}
+				else{
+					$all=0;
+				}
+			}
+			if($all == 1){
+				%mapping_contained_hash=();
+			}
+		}
+		$node[1]=\%mapping_hash;
+		$node[2]=\%mapping_cut_hash;
+		$node[3]=\%mapping_contained_hash;
+
+		$node_list[$i]=\@node;
+	}
+	return \@node_list;
+}
+
+
 sub print_node_variations {
     my $node_list_ref=shift;
     my @node_list=@{$node_list_ref};
@@ -742,10 +918,13 @@ sub print_node_variations {
     local *FH=shift;
     my $gene=shift;
     my $count_node=shift;	#if $is_GF_node is true, this is the number of nodes in GR (and viceversa)
-    my $node_list_ref2=shift; #Nodel list of GR if $is_GF_node is true (and viceversa)
+    my $node_list_ref2=shift; #Node list of GR if $is_GF_node is true (and viceversa)
     my $start_GF=shift;
+    my $end_GF=shift;
     my $n_obj=shift;
     my $last_inserted=shift;
+    my $max_introns=shift;
+    my $max_new_h=shift;
     my @node_list2=@{$node_list_ref2};
     
     #for $is_GF_node=1 the new nodes are in GR (and viceversa)
@@ -791,13 +970,23 @@ sub print_node_variations {
 		
 		if(scalar(keys %mapping_contained_hash) > 0){
 			foreach my $key(keys %mapping_contained_hash){
-				my %hash_temp=%{$mapping_contained_hash{$key}};
-				foreach my $offs(keys %hash_temp){
-					my @off_list=@{$hash_temp{$offs}};
-					if(exists $variant_node_offs{$offs}){
-						push @{$variant_node_offs{$offs}}, $key+1;
-					}else{
-						$variant_node_offs{$offs}=[$key+1];
+				#MODIFICARE
+				my $found=0;
+				foreach my $n(@variant_node_list){
+					if($n == $key+1){
+						$found=1;
+					}
+				}
+
+				if($found == 0){
+					my %hash_temp=%{$mapping_contained_hash{$key}};
+					foreach my $offs(keys %hash_temp){
+						my @off_list=@{$hash_temp{$offs}};
+						if(exists $variant_node_offs{$offs}){
+							push @{$variant_node_offs{$offs}}, $key+1;
+						}else{
+							$variant_node_offs{$offs}=[$key+1];
+						}
 					}
 				}				
 				
@@ -805,7 +994,7 @@ sub print_node_variations {
 				$completely_new_nodes{$key+1}=0;
 			}
 		}
-		
+
 		my %new_blocks=();
 		my %new_edges=();
 		my $p=0;
@@ -850,7 +1039,8 @@ sub print_node_variations {
 			print FH $i+1, "(", $length, ")\t=>\t";
 			
 			my @new_edges=keys %new_edges;
-			
+			my @start_GR;
+			my @end_GR;
 			foreach my $off(@offsets){
 				my @node_index=@{$variant_node_offs{$off}};
 				foreach my $n(@node_index){
@@ -865,7 +1055,9 @@ sub print_node_variations {
 					}
 					print FH "#", $n, "[", ($off+1), ",", ($off+$l), "] ";
                                         $n_obj = $n_obj + 1;
-                                        print GNUPLOT "set object ", $n_obj, " rect from ", ($start_GF->[$i])+($off+1),",-1 to ",$start_GF->[$i]+($off+$l),",0 fc lt 2 lw 1 front\n";
+                                        print GNUPLOT "set object $n_obj rect from ", ($start_GF->[$i])+($off+1),",-1 to ",($start_GF->[$i])+($off+$l),",0 fc lt 2 lw 1 front\n";
+					$start_GR[$n] = ($start_GF->[$i])+($off+1);
+					$end_GR[$n] = ($start_GF->[$i])+($off+$l);
                                         if(($start_GF->[$i])+($off+1) > $$last_inserted){
                                           $$last_inserted = ($start_GF->[$i])+($off+1);
                                         }
@@ -880,8 +1072,30 @@ sub print_node_variations {
 					print FH "GF";
 				}
 				print FH "links(", join(";", @new_edges), ")";
+				foreach my $e(@new_edges){
+					$e =~ m/\(([0-9]+),([0-9]+)\)/;
+                    			my $start= ($1);
+                    			my $end= ($2);
+					#print "Nodi GR Start $1 end $2\n";
+                      			if($start > $end){
+                        			my $tmp = $start;
+                        			$start = $end;
+                        			$end = $tmp;
+                      			}
+                      			my $diff = ($start_GR[$end] - $end_GR[$start])/2;
+                      			my $height = ($diff / $max_introns)*10 + 1;
+					$height=2 if $height<2;
+					print GNUPLOT "set arrow from $end_GR[$start],-1 to ", $end_GR[$start]+$diff,",-$height nohead ls 2\n";
+	                        	print GNUPLOT "set arrow from ",$end_GR[$start]+$diff,",-$height to $start_GR[$end],-1 nohead ls 2\n";
+					if($height > $$max_new_h){
+						$$max_new_h = $height;
+					}
+				}
 			}
+
 			print FH "\n";
+			
+				
 		#}
 	}	
 	
@@ -904,7 +1118,7 @@ sub print_node_variations {
   }
 
 sub get_fingerprinting {
-	my $node_list_ref=shift;
+    my $node_list_ref=shift;
     my @node_list=@{$node_list_ref};
     my $f_length=shift;
     my $f_offset=shift;
