@@ -46,11 +46,11 @@ using namespace std;
 
 int main(int argc, char* argv[]){
     if(argc < 3){
-        std::cerr << "Usage: separate_genes <RNA-seq_file> --gene <Gene>" << std::endl;
+        std::cerr << "Usage: separate_genes <RNA-seq_file> --genes <Gene1> [... <GeneN>]" << std::endl;
         std::cerr << std::endl;
         return 1;
     }
-  
+
     long file_dimension = 0;
     ifstream f(argv[1],::std::ios_base::in|::std::ios_base::binary|ios::ate);
 
@@ -60,22 +60,26 @@ int main(int argc, char* argv[]){
     }
     else{
         std::cerr << "Unable to open files " << std::endl;
-        return 1;	
+        return 1;
     }
     long read_size = 0;
     int perc = 0;
     std::fstream data_file;
-     data_file.open(argv[1], std::ios_base::in | std::ios_base::binary);
-     if(data_file.is_open()){
-         string gene(argv[3]);
-         std::cerr << "Filtering " << gene << " gene" << std::endl;
-         String<char> fasta_tag;
-         String<Dna5> read_seq;
-         
-         //RNA-seq Reads
+    data_file.open(argv[1], std::ios_base::in | std::ios_base::binary);
+    string* genes= new string[argc-2];
+    for(int i=3; i<argc; ++i){
+        genes[i-3] = string(argv[i]);
+    }
+
+    if(data_file.is_open()){
+        //RNA-seq Reads
          clock_t tStart = clock();
          std::cerr << "Processing RNA-seq file..." << std::endl;
+
          while(!data_file.eof()){
+             String<char> fasta_tag;
+             String<Dna5> read_seq;
+
              readMeta(data_file, fasta_tag, Fasta());
              read(data_file, read_seq, Fasta());
              read_size+=((length(fasta_tag)*sizeof(char))+(length(read_seq)*sizeof(char)));
@@ -85,20 +89,23 @@ int main(int argc, char* argv[]){
                      std::cerr << "Processed: " << perc << "%" << std::endl;
                  }
              }
-             
-             string read_tag;
-             assign(read_tag,fasta_tag);
-             if(read_tag.find(gene) != string::npos){
-                 std::cout << ">" << read_tag << std::endl;
-                 std::cout << read_seq << std::endl;
+             for(int i=0; i<argc-2; ++i){
+                 string read_tag;
+                 assign(read_tag,fasta_tag);
+                 if(read_tag.find(genes[i]) != string::npos){
+                     std::ofstream fout(genes[i].c_str(), ios_base::out | ios_base::app);
+                     fout << ">" << read_tag << "\n";
+                     fout << read_seq << "\n";
+                     fout.close();
+                 }
              }
          }
-         
+
          std::cerr << "Processing RNA-seq file...done!" << std::endl;
          std::cerr << "Processing took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
          std::cerr << " seconds." << std::endl << std::endl;
          data_file.close();
-         
+
      }else{
          std::cerr << "Unable to open RNA-seq file" << std::endl;
          std::cerr << std::endl;
