@@ -54,6 +54,10 @@ and to compute intron data that, obviously, cannot be present in the isoforms.
 RNA-seq-Graph-Builder is currently distributed only on source form.
 It has been developed on Ubuntu Linux machines (v. 10.04 and
 10.10) and has been tested on both 32 and 64 bit.
+The program requires the C++ library SEQAN available at <http://www.seqan.de> 
+or it is possible to install the develop package seqan-dev by typing:
+
+    $ sudo apt-get install seqan-dev
 
 ### Download ###
 
