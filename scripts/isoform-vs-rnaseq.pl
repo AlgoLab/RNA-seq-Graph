@@ -562,7 +562,7 @@ foreach my $dir(@lists){
                   push @c_end, $this_end;
                   $last_inserted = $this_end + $space_len;
                 }
-                my $max_intron = 0;
+                my $max_intron = 1;
                 for(my $i=0; $i < $count_GF_node; $i++){
                   for(my $j=0; $j < $count_GF_node; $j++){
                     if($GF_adj_matx->[$i][$j] == 1){

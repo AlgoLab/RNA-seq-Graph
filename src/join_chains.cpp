@@ -475,8 +475,19 @@ void check_cutted_frags(CharString frag, std::vector<table_entry*> &links,
 
 void link_fragment_chains(tables& table, map<unsigned long long, string> & chains, int ref_level, char* out_file){
     ::std::vector<table_entry*> linking_reads;
+    if(table.left_map.empty() || table.right_map.empty()){
+	std::cerr << "No Links" << std::endl;
+	std::map<unsigned long long, unsigned long long> mapping;
+    	std::map<unsigned long long, string>::iterator ch_it;
+    	for(ch_it = chains.begin(); ch_it != chains.end(); ++ch_it){
+		mapping[ch_it->first] = ch_it->first;
+    	}
+	print_graph(linking_reads,chains, mapping, out_file);
+	return;
+    }
     hash_map::iterator seq_it;
     int len = length(table.left_map.begin()->second.p->get_short_read()->get_RNA_seq_sequence());
+    std::cout << "QUI" << std::endl;
     //Look for half spliced RNA-seqs
     for(seq_it=table.left_map.begin(); seq_it != table.left_map.end(); seq_it++){
         if(!(*seq_it).second.unspliced){
