@@ -130,7 +130,7 @@ int main(int argc, char* argv[]){
     std::map<unsigned long long, vector<pair<int,int > > > ref_map;
  
     if(data_file.is_open() && ref.is_open() && out_file.is_open() && not_mapped.is_open()){  
-       
+        
         std::vector<string> v;
         std::vector<String<char> > tags;
 
