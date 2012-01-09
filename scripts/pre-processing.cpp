@@ -297,7 +297,7 @@ int main(int argc, char* argv[]){
 #pragma omp critical(writing_reads)
                                 {
                                     //usleep(5000);
-                                    out_file << ">l:" << genes[ref_map[left_f].at(j).first] << "|r:no-mapping";
+                                    out_file << ">l:" << genes[ref_map[left_f].at(j).first] << "|r:no-mapping" << std::endl;
                                     out_file << read << std::endl;
                                 }
                             }
@@ -398,7 +398,7 @@ int main(int argc, char* argv[]){
 #pragma omp critical(writing_reads)
                                     {
                                         //usleep(5000);
-                                        out_file << ">l:" << genes[ref_map[left_f].at(j).first] << "|r:no-mapping";
+                                        out_file << ">l:" << genes[ref_map[left_f].at(j).first] << "|r:no-mapping" << std::endl;
                                         out_file << read_rev_comp << std::endl;
                                     }
                                 }
