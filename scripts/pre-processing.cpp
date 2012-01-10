@@ -273,13 +273,15 @@ int main(int argc, char* argv[]){
                             //Check if the position is beyond the length of the Refseq sequence
                             unsigned int pos_s = ref_map[left_f].at(j).second + (READ_LEN/2);
                             unsigned int pos_e = ref_map[left_f].at(j).second + READ_LEN;
+                            bool out_bound = false;
                             if(pos_e > length(ref_sequences[ref_map[left_f].at(j).first])){
                                 pos_e = length(ref_sequences[ref_map[left_f].at(j).first]);
+                                out_bound = true;
                             }
                             assign(ref_right,infix(ref_sequences[ref_map[left_f].at(j).first],
                                                    pos_s,pos_e));
                                                       
-                            if(levenshtein_distance(read.substr(READ_LEN/2),ref_right)<=1){
+                            if(levenshtein_distance(read.substr(READ_LEN/2),ref_right)<=1 && !out_bound){
 #pragma omp critical(writing_reads)
                                 {
                                     //usleep(5000);
@@ -374,13 +376,15 @@ int main(int argc, char* argv[]){
                                 //Check if the position is beyond the length of the Refseq sequence
                                 unsigned int pos_s = ref_map[left_f].at(j).second + (READ_LEN/2);
                                 unsigned int pos_e = ref_map[left_f].at(j).second + READ_LEN;
+                                bool out_bound = false;
                                 if(pos_e > length(ref_sequences[ref_map[left_f].at(j).first])){
                                     pos_e = length(ref_sequences[ref_map[left_f].at(j).first]);
+                                    out_bound = true;
                                 }
                                 assign(ref_right,infix(ref_sequences[ref_map[left_f].at(j).first],
                                                        pos_s,pos_e));
                             
-                                if(levenshtein_distance(read_rev_comp.substr(READ_LEN/2),ref_right)<=1){
+                                if(levenshtein_distance(read_rev_comp.substr(READ_LEN/2),ref_right)<=1 && !out_bound){
 #pragma omp critical(writing_reads)
                                     {
                                         //usleep(5000);
