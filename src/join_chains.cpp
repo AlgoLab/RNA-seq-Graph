@@ -35,6 +35,9 @@
 //Comment to disable GDL output
 #define GDL_OUT
 
+//Comment to disable SIGNIFICATIVE output
+#define SIGNIFICATIVE
+
 /******************************/
 /* Build and print the graph  */
 /******************************/
@@ -70,6 +73,27 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
     gdl_file << "\tnode.width\t: 80\n";
 #endif
 
+#ifdef SIGNIFICATIVE
+    string sign_file_name = "";
+    if(graphML_out_file == NULL){
+	sign_file_name = "RNA-seq-graph_sign.gdl";
+    }else{
+	sign_file_name = graphML_out_file;
+	sign_file_name += "_sign.gdl";
+    }
+    //Significative GDL file
+    ofstream sign_file;
+    sign_file.open(sign_file_name.c_str());
+    //GDL header
+    sign_file << "graph: {\n";
+    sign_file << "\tnode.shape\t: circle\n";
+    sign_file << "\tnode.height\t: 80\n";
+    sign_file << "\tnode.width\t: 80\n";
+
+    //Significative nodes
+    std::set<unsigned long long> sign_nodes;
+#endif
+
     //GraphML
     typedef boost::property<boost::vertex_name_t, int, 
         boost::property<boost::vertex_color_t, std::string> > VertexProperty;
@@ -93,6 +117,13 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
         //File output
         out_file << "node#" << node_id << " " << ch_iter->second << "\n"; 
 #endif
+
+#ifdef SIGNIFICATIVE
+        if(ch_iter->second.length() > 1000){
+            sign_nodes.insert(ch_iter->first);
+        }
+#endif
+
     }
 
     //Graph Initialization
@@ -139,6 +170,12 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
                         out_file << graph_nodes[mapping[links[i]->at_D_link(j)]] << ";";
                         out_file << graph_nodes[mapping[links[i]->at_A_link(k)]] << "\n";
 			#endif
+
+                        #ifdef SIGNIFICATIVE
+                        sign_nodes.insert(mapping[links[i]->at_D_link(j)]);
+                        sign_nodes.insert(mapping[links[i]->at_A_link(k)]);
+                        #endif
+
 			//Graphml arcs
                         ::boost::add_edge(source-1,target-1,ug);
                     }
@@ -151,6 +188,34 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
 #ifdef GDL_OUT
     gdl_file << "}";
 #endif
+
+#ifdef SIGNIFICATIVE
+    std::set<unsigned long long>::iterator sign_it;
+    for(sign_it = sign_nodes.begin(); sign_it != sign_nodes.end(); ++sign_it){
+        sign_file << "\tnode: {\n";
+        sign_file << "\t\t title: \"" << graph_nodes[*sign_it] << "\"\n";
+        sign_file << "\t\t label: \"" << graph_nodes[*sign_it] << " - " << chains.find(*sign_it)->second.length() << "\"\n";
+        sign_file << "\t\t //" << chains.find(*sign_it)->second << "\n";
+        sign_file << "\t}\n";
+    }
+    for(unsigned int i=0; i<links.size(); ++i){
+        for(int j=0; j<links[i]->size_D_link(); ++j){
+            for(int k=0; k<links[i]->size_A_link(); ++k){
+                if(graph_nodes.find(mapping[links[i]->at_D_link(j)]) != graph_nodes.end() &&
+                   graph_nodes.find(mapping[links[i]->at_A_link(k)]) != graph_nodes.end()){
+                    if(graph_nodes[mapping[links[i]->at_D_link(j)]] != graph_nodes[mapping[links[i]->at_A_link(k)]]){
+                        sign_file << "\t edge: {\n";
+                        sign_file << "\t\t source: \"" << graph_nodes[mapping[links[i]->at_D_link(j)]] << "\"\n";
+                        sign_file << "\t\t target: \"" << graph_nodes[mapping[links[i]->at_A_link(k)]] << "\"\n";
+                        sign_file << "\t}\n";
+                    }
+                }
+            }
+        }
+    }
+    sign_file << "}";
+#endif
+
     //Graphml export
     ::boost::dynamic_properties dp;
     ::boost::graph_traits<Graph>::vertex_iterator v, v_end;
@@ -176,6 +241,10 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
 #ifdef GDL_OUT    
     out_file.close();
     gdl_file.close();
+#endif
+
+#ifdef SIGNIFICATIVE
+    sign_file.close();
 #endif
 }//End_Method
 
