@@ -487,7 +487,6 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
     }
     hash_map::iterator seq_it;
     int len = length(table.left_map.begin()->second.p->get_short_read()->get_RNA_seq_sequence());
-    std::cout << "QUI" << std::endl;
     //Look for half spliced RNA-seqs
     for(seq_it=table.left_map.begin(); seq_it != table.left_map.end(); seq_it++){
         if(!(*seq_it).second.unspliced){
@@ -634,7 +633,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
     std::cerr << "Linking graph nodes took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
     std::cerr << " seconds." << std::endl << std::endl;
     //print_merged_chains(chains);
-  #define MERGING
+    //#define MERGING
   #ifdef MERGING
     std::cerr << "Merging " << chains.size() << " Graph Nodes...";
     tStart = clock();
