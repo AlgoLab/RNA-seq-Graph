@@ -19,7 +19,7 @@ def graph_analyzer(graphml_file,threshold):
         nodes = {}
         sequences = {}
         (filename,extension) = os.path.splitext(graphml_file)
-        seq_file = open(filename+'_cc',mode='w',encoding='utf-8')
+        seq_file = open(filename+'_cc.fa',mode='w',encoding='utf-8')
         stat_file = open(filename+'_stats',mode='w',encoding='utf-8')
 
         with open(graphml_file,encoding='utf-8') as g_file:
@@ -58,7 +58,7 @@ def graph_analyzer(graphml_file,threshold):
                 stat_file.write("#{}\t{}\n".format(vid, nodes[vid][2]) )
                 if nodes[vid][2] > int(threshold):
                         cc_num = cc_num + 1
-                        seq_file.write("CC{}_NODE1:\t{}\n".format(cc_num,sequences[vid]) )
+                        seq_file.write(">CC{}_NODE1\n{}\n".format(cc_num,sequences[vid]) )
         stat_file.write("\n")
 	
         vertexes = set(nodes.keys()) - isolated
@@ -86,7 +86,7 @@ def graph_analyzer(graphml_file,threshold):
                         cc_num_node = 0
                         for vid in cc_set:
                                 cc_num_node += 1
-                                seq_file.write("CC{}_NODE{}:\t{}\n".format(cc_num,cc_num_node,sequences[vid]))
+                                seq_file.write(">CC{}_NODE{}\n{}\n".format(cc_num,cc_num_node,sequences[vid]))
                         #seq_file.write("\n".join("CC{}_NODE:\t{}".format(cc_num,sequences[vid]) for vid in cc_set))
                         #seq_file.write("\n")
         seq_file.close()
