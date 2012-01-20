@@ -98,8 +98,10 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
     typedef boost::property<boost::vertex_name_t, int, 
         boost::property<boost::vertex_color_t, std::string> > VertexProperty;
 
+    typedef boost::property<boost::edge_weight_t, long> EdgeProperty; 
+
     typedef boost::adjacency_list< boost::vecS, boost::vecS, boost::directedS,
-         VertexProperty> Graph;
+        VertexProperty, EdgeProperty> Graph;
 
     std::vector<std::string> vertex_names;
     for(ch_iter = chains.begin(); ch_iter != chains.end(); ++ch_iter){
@@ -158,6 +160,7 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
                         gdl_file << "\t edge: {\n";
                         gdl_file << "\t\t source: \"" << graph_nodes[mapping[links[i]->at_D_link(j)]] << "\"\n";
                         gdl_file << "\t\t target: \"" << graph_nodes[mapping[links[i]->at_A_link(k)]] << "\"\n";
+                        gdl_file << "\t\t label: \"" << links[i]->get_frequency() << "\"\n";
                         gdl_file << "\t}\n";
 			#endif
                         
@@ -177,7 +180,7 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
                         #endif
 
 			//Graphml arcs
-                        ::boost::add_edge(source-1,target-1,ug);
+                        ::boost::add_edge(source-1,target-1,links[i]->get_frequency(),ug);
                     }
                 }
             }//End_For
@@ -207,6 +210,7 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
                         sign_file << "\t edge: {\n";
                         sign_file << "\t\t source: \"" << graph_nodes[mapping[links[i]->at_D_link(j)]] << "\"\n";
                         sign_file << "\t\t target: \"" << graph_nodes[mapping[links[i]->at_A_link(k)]] << "\"\n";
+                        sign_file << "\t\t label: \"" << links[i]->get_frequency() << "\"\n";
                         sign_file << "\t}\n";
                     }
                 }
@@ -224,9 +228,10 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
         put(::boost::vertex_name_t(), ug, *v, vertex_names[(*v)].length());
         put(::boost::vertex_color_t(), ug, *v, vertex_names[(*v)]);
     }
-    
+
     dp.property("length", get(::boost::vertex_name_t(), ug));
     dp.property("seq", get(::boost::vertex_color_t(), ug));
+    dp.property("weight", get(::boost::edge_weight_t(), ug));
     if(graphML_out_file == NULL){
         ::boost::write_graphml(::std::cout, ug, dp, true);
     }else{
@@ -542,6 +547,151 @@ void check_cutted_frags(CharString frag, std::vector<table_entry*> &links,
     }
 }
 
+/*************************************/
+/* Confirm Perfectly Spliced reads   */
+/* by looking for spliced reads that */
+/* are the same link. This increase  */
+/* the weight of the link.           */
+/*************************************/
+void confirm_links(tables& table){
+    hash_map::iterator seq_it;
+    int len = length(table.left_map.begin()->second.p->get_short_read()->get_RNA_seq_sequence());
+    //Left spliced
+    for(seq_it = table.left_map.begin(); seq_it != table.left_map.end(); ++seq_it){
+        if(!(seq_it->second.unspliced) && !(seq_it->second.half_spliced)){
+            table_entry *t = seq_it->second.p;
+            while(t != NULL){
+                //std::cerr << t->get_short_read()->get_RNA_seq_sequence() << std::endl;
+                String<Dna5> s = t->get_short_read()->get_RNA_seq_sequence();
+                for(int i=1; i<=len/4; ++i){
+                    string left_part;
+                    String<Dna5> end_part = seqan::suffix(s,i+(len/2));
+                    seqan::assign(left_part,seqan::infix(s,i,i+(len/2)));
+                    //std::cerr << left_part << " " << end_part << std::endl;
+                    if(table.left_map.find(fingerprint(left_part)) != table.left_map.end()){
+                        if(table.left_map[fingerprint(left_part)].half_spliced){
+                            table_entry* t_hs = table.left_map[fingerprint(left_part)].p;
+                            while(t_hs != NULL){
+                                if(seqan::isEqual(end_part,
+                                                  seqan::infix(t_hs->get_short_read()->get_RNA_seq_sequence(),len/2,(len/2)+length(end_part)))){
+                                    t_hs->increase_freq(t->get_frequency());
+                                    //std::cerr << s << std::endl;
+                                    //std::cerr << t_hs->get_short_read()->get_RNA_seq_sequence() << std::endl;
+                                }
+                                t_hs = t_hs->get_l_next();
+                            }
+                        }else{
+                            table_entry* t_hs = table.left_map[fingerprint(left_part)].p;
+                            if(table.right_map[t_hs->get_right_fingerprint()].half_spliced &&
+                               seqan::isEqual(end_part,
+                                              seqan::infix(t_hs->get_short_read()->get_RNA_seq_sequence(),len/2,(len/2)+length(end_part)))){
+                                t_hs->increase_freq(t->get_frequency());
+                                //std::cerr << s << std::endl;
+                                //std::cerr << t_hs->get_short_read()->get_RNA_seq_sequence() << std::endl;
+                            }
+                        }
+                    }
+                    string right_part;
+                    String<Dna5> start_part = seqan::prefix(s,len-i-(len/2));
+                    seqan::assign(right_part,seqan::infix(s,len-i-(len/2),len-i));
+                    //std::cerr << start_part << " " << right_part << std::endl;
+                    if(table.right_map.find(fingerprint(right_part)) != table.right_map.end()){
+                        if(table.right_map[fingerprint(right_part)].half_spliced){
+                            table_entry* t_hs = table.right_map[fingerprint(right_part)].p;
+                            while(t_hs != NULL){
+                                if(seqan::isEqual(start_part,
+                                                  seqan::infix(t_hs->get_short_read()->get_RNA_seq_sequence(),len/2-length(start_part),len/2))){
+                                    t_hs->increase_freq(t->get_frequency());
+                                    //std::cerr << s << std::endl;
+                                    //std::cerr << t_hs->get_short_read()->get_RNA_seq_sequence() << std::endl;
+                                }
+                                t_hs = t_hs->get_r_next();
+                            }
+                        }else{
+                            table_entry* t_hs = table.right_map[fingerprint(right_part)].p;
+                            if(table.left_map[t_hs->get_left_fingerprint()].half_spliced &&
+                               seqan::isEqual(start_part,
+                                              seqan::infix(t_hs->get_short_read()->get_RNA_seq_sequence(),len/2-length(start_part),len/2))){
+                                t_hs->increase_freq(t->get_frequency());
+                                //std::cerr << s << std::endl;
+                                //std::cerr << t_hs->get_short_read()->get_RNA_seq_sequence() << std::endl;
+                            }
+                        }
+                    }
+                }
+                t = t->get_l_next();
+            }
+        }
+    }
+    //Right spliced
+    for(seq_it = table.right_map.begin(); seq_it != table.right_map.end(); ++seq_it){
+        if(!(seq_it->second.unspliced) && !(seq_it->second.half_spliced)){
+            table_entry *t = seq_it->second.p;
+            while(t != NULL){
+                //std::cerr << t->get_short_read()->get_RNA_seq_sequence() << std::endl;
+                String<Dna5> s = t->get_short_read()->get_RNA_seq_sequence();
+                for(int i=1; i<=len/4; ++i){
+                    string left_part;
+                    String<Dna5> end_part = seqan::suffix(s,i+(len/2));
+                    seqan::assign(left_part,seqan::infix(s,i,i+(len/2)));
+                    //std::cerr << left_part << " " << end_part << std::endl;
+                    if(table.left_map.find(fingerprint(left_part)) != table.left_map.end()){
+                        if(table.left_map[fingerprint(left_part)].half_spliced){
+                            table_entry* t_hs = table.left_map[fingerprint(left_part)].p;
+                            while(t_hs != NULL){
+                                if(seqan::isEqual(end_part,
+                                                  seqan::infix(t_hs->get_short_read()->get_RNA_seq_sequence(),len/2,(len/2)+length(end_part)))){
+                                    t_hs->increase_freq(t->get_frequency());
+                                    //std::cerr << s << std::endl;
+                                    //std::cerr << t_hs->get_short_read()->get_RNA_seq_sequence() << std::endl;
+                                }
+                                t_hs = t_hs->get_l_next();
+                            }
+                        }else{
+                            table_entry* t_hs = table.left_map[fingerprint(left_part)].p;
+                            if(table.right_map[t_hs->get_right_fingerprint()].half_spliced &&
+                               seqan::isEqual(end_part,
+                                              seqan::infix(t_hs->get_short_read()->get_RNA_seq_sequence(),len/2,(len/2)+length(end_part)))){
+                                t_hs->increase_freq(t->get_frequency());
+                                //std::cerr << s << std::endl;
+                                //std::cerr << t_hs->get_short_read()->get_RNA_seq_sequence() << std::endl;
+                            }
+                        }
+                    }
+                    string right_part;
+                    String<Dna5> start_part = seqan::prefix(s,len-i-(len/2));
+                    seqan::assign(right_part,seqan::infix(s,len-i-(len/2),len-i));
+                    //std::cerr << start_part << " " << right_part << std::endl;
+                    if(table.right_map.find(fingerprint(right_part)) != table.right_map.end()){
+                        if(table.right_map[fingerprint(right_part)].half_spliced){
+                            table_entry* t_hs = table.right_map[fingerprint(right_part)].p;
+                            while(t_hs != NULL){
+                                if(seqan::isEqual(start_part,
+                                                  seqan::infix(t_hs->get_short_read()->get_RNA_seq_sequence(),len/2-length(start_part),len/2))){
+                                    t_hs->increase_freq(t->get_frequency());
+                                    //std::cerr << s << std::endl;
+                                    //std::cerr << t_hs->get_short_read()->get_RNA_seq_sequence() << std::endl;
+                                }
+                                t_hs = t_hs->get_r_next();
+                            }
+                        }else{
+                            table_entry* t_hs = table.right_map[fingerprint(right_part)].p;
+                            if(table.left_map[t_hs->get_left_fingerprint()].half_spliced &&
+                               seqan::isEqual(start_part,
+                                              seqan::infix(t_hs->get_short_read()->get_RNA_seq_sequence(),len/2-length(start_part),len/2))){
+                                t_hs->increase_freq(t->get_frequency());
+                                //std::cerr << s << std::endl;
+                                //std::cerr << t_hs->get_short_read()->get_RNA_seq_sequence() << std::endl;
+                            }
+                        }
+                    }
+                }
+                t = t->get_r_next();
+            }
+        }
+    }
+}
+
 void link_fragment_chains(tables& table, map<unsigned long long, string> & chains, int ref_level, char* out_file){
     ::std::vector<table_entry*> linking_reads;
     if(table.left_map.empty() || table.right_map.empty()){
@@ -664,6 +814,10 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
         }//End_If
     }//End_For
     //std::cerr << "Size: " << chains.size() << std::endl;
+
+    //Confirm Perfectly Spliced reads
+    confirm_links(table);
+
     //Look for linking RNA-seqs
     map<unsigned long long, string>::iterator chain_it;
     //Come prova impostiamo delta a 1/2 della lunghezza dei read

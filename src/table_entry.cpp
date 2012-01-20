@@ -239,8 +239,16 @@ void table_entry::increase_freq(){
     this->frequency++;
 }
 
+void table_entry::increase_freq(long val){
+    this->frequency += val;
+}
+
 void table_entry::decrease_freq(){
     this->frequency--;
+}
+
+void table_entry::decrease_freq(long val){
+    this->frequency -= val;
 }
 
 //Linking Chains Methods

@@ -91,7 +91,9 @@ class table_entry{
 
     //Increase / Decrease Sequence Frequency
     void increase_freq();
+    void increase_freq(long);
     void decrease_freq();
+    void decrease_freq(long);
 
     //Linking chains methods
     void push_A_link(unsigned long long);

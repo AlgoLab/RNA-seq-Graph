@@ -48,6 +48,8 @@ int get_right_linked_read(string, tables&, int);
 
 void link_fragment_chains(tables&, ::std::map<unsigned long long, string> &, int, char*);
 
+void confirm_links(tables&);
+
 void print_graph(::std::vector<table_entry*>, ::std::map<unsigned long long, string>, 
                  ::std::map<unsigned long long, unsigned long long>, char*);
 
