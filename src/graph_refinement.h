@@ -34,7 +34,7 @@ int* computeBackTrackTable(string);
 void small_blocks(::std::vector<table_entry*> &, map<unsigned long long, string> &, unsigned int,
                   ::std::map<unsigned long long, unsigned long long>&);
 void tiny_blocks(::std::vector<table_entry*> &, map<unsigned long long, string> &, int,
-                 ::std::map<unsigned long long, unsigned long long>&);
+                 ::std::map<unsigned long long, unsigned long long>&, unsigned int);
 
 void linking_refinement(::std::vector<table_entry*> &, map<unsigned long long, string> &, unsigned int, 
                         ::std::map<unsigned long long, unsigned long long>&);

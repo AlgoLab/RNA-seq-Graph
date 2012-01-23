@@ -30,13 +30,9 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/graphml.hpp>
 
+#include "configuration.h"
 #include "join_chains.h"
 #include "build_chains.h"
-//Comment to disable GDL output
-#define GDL_OUT
-
-//Comment to disable SIGNIFICATIVE output
-#define SIGNIFICATIVE
 
 /******************************/
 /* Build and print the graph  */
@@ -121,7 +117,7 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
 #endif
 
 #ifdef SIGNIFICATIVE
-        if(ch_iter->second.length() > 1000){
+        if(ch_iter->second.length() > MIN_SIGN_LENGTH){
             sign_nodes.insert(ch_iter->first);
         }
 #endif
@@ -693,7 +689,7 @@ void confirm_links(tables& table){
 }
 
 void link_fragment_chains(tables& table, map<unsigned long long, string> & chains, int ref_level, char* out_file){
-    ::std::vector<table_entry*> linking_reads;
+    std::vector<table_entry*> linking_reads;
     if(table.left_map.empty() || table.right_map.empty()){
 	std::cerr << "No Links" << std::endl;
 	std::map<unsigned long long, unsigned long long> mapping;
@@ -705,7 +701,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
 	return;
     }
     hash_map::iterator seq_it;
-    int len = length(table.left_map.begin()->second.p->get_short_read()->get_RNA_seq_sequence());
+    //int len = length(table.left_map.begin()->second.p->get_short_read()->get_RNA_seq_sequence());
     //Look for half spliced RNA-seqs
     for(seq_it=table.left_map.begin(); seq_it != table.left_map.end(); seq_it++){
         if(!(*seq_it).second.unspliced){
@@ -715,7 +711,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
             while(sum <= 1 && t != NULL){
                 string str;
                 assign(str,t->get_short_read()->get_RNA_seq_sequence());
-                if(str[len/2] == 'A' || str[len/2] == 'a'){
+                if(str[READ_LEN/2] == 'A' || str[READ_LEN/2] == 'a'){
                     if(a[0] == 0){
                         a[0] = 1;
                         ++sum;
@@ -723,7 +719,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
                         //dupl = 1;
                     }//End_If
                 }//End_If
-                if(str[len/2] == 'C' || str[len/2] == 'c'){
+                if(str[READ_LEN/2] == 'C' || str[READ_LEN/2] == 'c'){
                     if(a[1] == 0){
                         a[1] = 1;
                         ++sum;
@@ -731,7 +727,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
                         //dupl = 1;
                     }//End_If
                 }//End_If
-                if(str[len/2] == 'G' || str[len/2] == 'g'){
+                if(str[READ_LEN/2] == 'G' || str[READ_LEN/2] == 'g'){
                     if(a[2] == 0){
                         a[2] = 1;
                         ++sum;
@@ -739,7 +735,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
                         //dupl = 1;
                     }//End_If
                 }//End_If
-                if(str[len/2] == 'T' || str[len/2] == 't'){
+                if(str[READ_LEN/2] == 'T' || str[READ_LEN/2] == 't'){
                     if(a[3] == 0){
                         a[3] = 1;
                         ++sum;
@@ -768,7 +764,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
             while(sum <= 1 && t != NULL){
                 string str;
                 assign(str,t->get_short_read()->get_RNA_seq_sequence());
-                if(str[len/2 - 1] == 'A' || str[len/2 - 1] == 'a'){
+                if(str[READ_LEN/2 - 1] == 'A' || str[READ_LEN/2 - 1] == 'a'){
                     if(a[0] == 0){
                         a[0] = 1;
                         ++sum;
@@ -776,7 +772,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
                         //dupl = 1;
                     }//End_If
                 }//End_If
-                if(str[len/2 - 1] == 'C' || str[len/2 - 1] == 'c'){
+                if(str[READ_LEN/2 - 1] == 'C' || str[READ_LEN/2 - 1] == 'c'){
                     if(a[1] == 0){
                         a[1] = 1;
                         ++sum;
@@ -784,7 +780,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
                         //dupl = 1;
                     }//End_If
                 }//End_If
-                if(str[len/2 - 1] == 'G' || str[len/2 - 1] == 'g'){
+                if(str[READ_LEN/2 - 1] == 'G' || str[READ_LEN/2 - 1] == 'g'){
                     if(a[2] == 0){
                         a[2] = 1;
                         ++sum;
@@ -792,7 +788,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
                         //dupl = 1;
                     }//End_If
                 }//End_If
-                if(str[len/2 - 1] == 'T' || str[len/2 - 1] == 't'){
+                if(str[READ_LEN/2 - 1] == 'T' || str[READ_LEN/2 - 1] == 't'){
                     if(a[3] == 0){
                         a[3] = 1;
                         ++sum;
@@ -821,10 +817,10 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
     //Look for linking RNA-seqs
     map<unsigned long long, string>::iterator chain_it;
     //Come prova impostiamo delta a 1/2 della lunghezza dei read
-    unsigned int delta = len/2;
+    unsigned int delta = READ_LEN/2;
     string new_chain;
     //int c = 0;
-    ::std::cerr << "Linking Chains...";
+    std::cerr << "Linking Chains...";
     clock_t tStart = clock();
     for(chain_it = chains.begin(); chain_it != chains.end(); ++chain_it){
 	if(chain_it->second.length() < delta){
@@ -837,12 +833,12 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
         int left_cut = get_right_linked_read(chain_it->second, table, delta);
         //std::cerr << left_cut << " " << right_cut << ::std::endl;
 	//std::cerr << chain_it->second << ::std::endl;
-        assign(new_chain,::seqan::infix(chain_it->second,left_cut,chain_it->second.length()-right_cut));
+        assign(new_chain,seqan::infix(chain_it->second,left_cut,chain_it->second.length()-right_cut));
         
         //std::cerr << new_chain << ::std::endl << ::std::endl;
 
-        check_cutted_frags(::seqan::prefix(chain_it->second,left_cut),linking_reads,chains,delta/2);
-        check_cutted_frags(::seqan::suffix(chain_it->second,chain_it->second.length()-right_cut),linking_reads,chains,delta/2);
+        check_cutted_frags(seqan::prefix(chain_it->second,left_cut),linking_reads,chains,delta/2);
+        check_cutted_frags(seqan::suffix(chain_it->second,chain_it->second.length()-right_cut),linking_reads,chains,delta/2);
         //::std::cout << "Pre " << ::seqan::prefix(chain_it->second,left_cut) << ::std::endl;
         //::std::cout << "Suf " << ::seqan::suffix(chain_it->second,chain_it->second.length()-right_cut) << ::std::endl;
 	//if(new_chain.length() < delta){
@@ -852,10 +848,11 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
         chain_it->second = new_chain;	
         //::std::cout << "Fine catena" << ::std::endl;
     }//End_For
-    std::cerr << "done!" << ::std::endl;
+    std::cerr << "done!" << std::endl;
     std::cerr << "Linking graph nodes took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
     std::cerr << " seconds." << std::endl << std::endl;
-    //print_merged_chains(chains);
+    //Look for links with gaps
+    add_linking_reads(linking_reads,chains,READ_LEN/2-GAP_LENGTH);
     //#define MERGING
   #ifdef MERGING
     std::cerr << "Merging " << chains.size() << " Graph Nodes...";
@@ -880,14 +877,14 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
     case 2:
         std::cerr << "Graph Refinement..." << std::endl;
         std::cerr << "Step 1...";
-        tiny_blocks(linking_reads,chains,delta,mapping);
+        tiny_blocks(linking_reads,chains,delta,mapping,MIN_LEN_TINY);
         std::cerr << "done!" << std::endl;
         std::cerr << "Graph Refinement...done!" << std::endl;
         break;
     case 3:
         std::cerr << "Graph Refinement..." << std::endl;
         std::cerr << "Step 1...";
-        tiny_blocks(linking_reads,chains,delta,mapping);
+        tiny_blocks(linking_reads,chains,delta,mapping,MIN_LEN_TINY);
         std::cerr << "done!" << std::endl;
         std::cerr << "Step 2...";
         add_linking_reads(linking_reads,chains,delta/2);
@@ -897,7 +894,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
     case 4:
         std::cerr << "Graph Refinement..." << std::endl;
         std::cerr << "Step 1...";
-        tiny_blocks(linking_reads,chains,delta,mapping);
+        tiny_blocks(linking_reads,chains,delta,mapping,MIN_LEN_TINY);
         std::cerr << "done!" << std::endl;
         std::cerr << "Step 2...";
         add_linking_reads(linking_reads,chains,delta/2);
@@ -910,7 +907,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
     case 5:
         std::cerr << "Graph Refinement..." << std::endl;
         std::cerr << "Step 1...";
-        tiny_blocks(linking_reads,chains,delta,mapping);
+        tiny_blocks(linking_reads,chains,delta,mapping,MIN_LEN_TINY);
         std::cerr << "done!" << std::endl;
         std::cerr << "Step 2...";
         add_linking_reads(linking_reads,chains,delta/2);

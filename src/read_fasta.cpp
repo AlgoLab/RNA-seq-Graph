@@ -33,9 +33,8 @@
 #include <seqan/sequence.h>
 #include <seqan/file.h>
 
+#include "configuration.h"
 #include "read_fasta.h"
-
-#define READ_LEN 64
 
 using namespace seqan;
 using namespace std;
@@ -378,20 +377,27 @@ int read_fasta(char* file_name, tables &t){
                 }
                 //Parse RNA-seq Sequence
                 if(length(fasta_seq) >= READ_LEN){
+#if defined(ONE_READ)
+			//Only the first substring of legnth READ_LEN
+			table_entry* tab = build_entry(infix(fasta_seq,0,READ_LEN));
+                    	add_entry(t, tab);
+			c++;
+#elif defined(TWO_READS)
+			//Only the first and the last substrings of length READ_LEN
+		    	table_entry* tab = build_entry(infix(fasta_seq,0,READ_LEN));
+                    	add_entry(t, tab);
+		    	tab = build_entry(infix(fasta_seq,length(fasta_seq)-READ_LEN,length(fasta_seq)));
+                    	add_entry(t, tab);
+		    	c+=2;
+#else
 		    //All the substrings of length READ_LEN
-		    /*
                     for(unsigned int i = 0;i<=length(fasta_seq)-READ_LEN;i++){
                         //table_entry* tab = parse_fasta(infix(fasta_seq,i,i+READ_LEN),toCString(fasta_tag));
 			table_entry* tab = build_entry(infix(fasta_seq,i,i+READ_LEN));
                         add_entry(t, tab);
 			c++;
-                    }*/
-		    //Only the first and the last substrings of length READ_LEN
-		    table_entry* tab = build_entry(infix(fasta_seq,0,READ_LEN));
-                    add_entry(t, tab);
-		    tab = build_entry(infix(fasta_seq,length(fasta_seq)-READ_LEN,length(fasta_seq)));
-                    add_entry(t, tab);
-		    c+=2;
+                    }
+#endif		    
                 }else{
                     ::std::cerr << "Invalid fasta entry" << ::std::endl;
                 }

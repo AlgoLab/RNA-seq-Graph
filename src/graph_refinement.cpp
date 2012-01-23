@@ -167,7 +167,7 @@ void small_blocks(::std::vector<table_entry*> & links, map<unsigned long long, s
 /* to existing chains          */
 /*******************************/
 void tiny_blocks(::std::vector<table_entry*> & links, map<unsigned long long, string> &chains, int len,
-                  map<unsigned long long, unsigned long long>& mapping){
+                  map<unsigned long long, unsigned long long>& mapping, unsigned int min_length){
     //map<unsigned long long, int> graph_nodes;
     map<unsigned long long, string>::iterator ch_iter;
     ::std::vector<small_frag> short_blocks;
@@ -187,7 +187,7 @@ void tiny_blocks(::std::vector<table_entry*> & links, map<unsigned long long, st
 		//Overlap between s1 and s2 grater or equal than s1/2
                 unsigned int overlap = overlappedStringLength(s1,s2);
                 
-                if(overlap > s1.length()/2 && overlap < s1.length()-6){
+                if(overlap > s1.length()/2 && overlap < s1.length()-min_length){
                     //::std::cout << s1 << ::std::endl;
                     //::std::cout << s2 << ::std::endl;
                     assign(s2,::seqan::suffix(s2,overlap));
