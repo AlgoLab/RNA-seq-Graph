@@ -852,7 +852,12 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
     std::cerr << "Linking graph nodes took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
     std::cerr << " seconds." << std::endl << std::endl;
     //Look for links with gaps
+    std::cerr << "Adding links with gaps...";
+    tStart = clock();
     add_linking_reads(linking_reads,chains,READ_LEN/2-GAP_LENGTH);
+    std::cerr << "done!" << std::endl;
+    std::cerr << "Adding links with gaps took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
+    std::cerr << " seconds." << std::endl << std::endl;
     //#define MERGING
   #ifdef MERGING
     std::cerr << "Merging " << chains.size() << " Graph Nodes...";
