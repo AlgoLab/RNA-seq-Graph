@@ -291,11 +291,11 @@ void add_linking_reads(::std::vector<table_entry*> & links, const map<unsigned l
     map<unsigned long long, string>::const_iterator ch_iter;
     map<unsigned long long, int> graph_nodes;
     //int c = 0;
-    int node_id = 0;
-    for(ch_iter = chains.begin(); ch_iter != chains.end(); ++ch_iter){
-        ++node_id;
-        graph_nodes[ch_iter->first] = node_id;
-    }
+    //int node_id = 0;
+    //for(ch_iter = chains.begin(); ch_iter != chains.end(); ++ch_iter){
+    //    ++node_id;
+    //    graph_nodes[ch_iter->first] = node_id;
+    //}
 
     for(unsigned int i=0; i<links.size(); ++i){
         if(links[i]->size_D_link() != 0 && links[i]->size_A_link() == 0){

@@ -55,4 +55,8 @@ void print_graph(::std::vector<table_entry*>, ::std::map<unsigned long long, str
 
 void check_cutted_frags(CharString, ::std::vector<table_entry*> &, 
                         map<unsigned long long, string> &, unsigned int);
+
+void confirm_links(tables&);
+
+void gap_linking(std::vector<table_entry*> &, const map<unsigned long long, string>, unsigned int);
 #endif

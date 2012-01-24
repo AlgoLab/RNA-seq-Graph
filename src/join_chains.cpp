@@ -688,6 +688,68 @@ void confirm_links(tables& table){
     }
 }
 
+/*******************************/
+/* Adds links between existing */
+/* nodes with possible gaps    */
+/*******************************/
+void gap_linking(std::vector<table_entry*> & links, const map<unsigned long long, string> chains, unsigned int gap_len){
+    map<unsigned long long, string>::const_iterator ch_iter;
+    map<unsigned long long, int> graph_nodes;
+    long pending_links = 0;
+    long added_links = 0;
+    for(unsigned int i=0; i<links.size(); ++i){
+        if(links[i]->size_D_link() != 0 && links[i]->size_A_link() == 0){
+            pending_links++;
+            for(unsigned int q=1; q<=gap_len; ++q){
+                bool found = false;
+                string read_tail;
+                assign(read_tail,seqan::suffix(links[i]->get_short_read()->get_RNA_seq_sequence(),READ_LEN/2+q));
+                for(ch_iter = chains.begin(); ch_iter != chains.end(); ++ch_iter){
+                    if(ch_iter->second.length() > length(read_tail)){
+                        string chain_head;
+                        assign(chain_head,seqan::prefix(ch_iter->second,READ_LEN/2-q));
+                        if(read_tail == chain_head){
+                            added_links++;
+                            links[i]->push_A_link(ch_iter->first);
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                if(found){
+                    break;
+                }
+            }
+        }
+        if(links[i]->size_A_link() != 0 && links[i]->size_D_link() == 0){
+            pending_links++;
+            for(unsigned int q=1; q<=gap_len; ++q){
+                bool found = false;
+                string read_head;
+                assign(read_head,seqan::prefix(links[i]->get_short_read()->get_RNA_seq_sequence(),READ_LEN/2-q));
+                for(ch_iter = chains.begin(); ch_iter != chains.end(); ++ch_iter){
+                    if(ch_iter->second.length() > length(read_head)){
+                        string chain_tail;
+                        assign(chain_tail,seqan::suffix(ch_iter->second,ch_iter->second.length()-READ_LEN/2+q));
+                        if(read_head == chain_tail){
+                            added_links++;
+                            links[i]->push_D_link(ch_iter->first);
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                if(found){
+                    break;
+                }
+            }
+        }
+    }
+    std::cerr << std::endl;
+    std::cerr << "Number of pending links: " << pending_links << std::endl;
+    std::cerr << "Number of links with gaps added: " << added_links << std::endl;
+}
+
 void link_fragment_chains(tables& table, map<unsigned long long, string> & chains, int ref_level, char* out_file){
     std::vector<table_entry*> linking_reads;
     if(table.left_map.empty() || table.right_map.empty()){
@@ -852,12 +914,13 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
     std::cerr << "Linking graph nodes took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
     std::cerr << " seconds." << std::endl << std::endl;
     //Look for links with gaps
+    /*
     std::cerr << "Adding links with gaps...";
     tStart = clock();
-    add_linking_reads(linking_reads,chains,READ_LEN/2-GAP_LENGTH);
+    gap_linking(linking_reads,chains,GAP_LENGTH);
     std::cerr << "done!" << std::endl;
     std::cerr << "Adding links with gaps took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
-    std::cerr << " seconds." << std::endl << std::endl;
+    std::cerr << " seconds." << std::endl << std::endl;*/
     //#define MERGING
   #ifdef MERGING
     std::cerr << "Merging " << chains.size() << " Graph Nodes...";

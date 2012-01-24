@@ -45,7 +45,7 @@ Function: read_fasta()
 File: join_chains.cpp
 Function: link_fragment_chains()
 */
-#define GAP_LENGTH 5
+#define GAP_LENGTH 3
 
 /* Merigin procedure of graph nodes
 after linking
