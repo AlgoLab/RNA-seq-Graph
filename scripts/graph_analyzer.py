@@ -15,6 +15,23 @@ def DFS (G, v):
 			S.update ([ x for x in G[w][0] if x not in visited ])
 			S.update ([ x for x in G[w][1] if x not in visited ])
 
+def graph_weights(graphml_file):
+        (filename,extension) = os.path.splitext(graphml_file)
+        weights_file = open(filename+'_weights',mode='w',encoding='utf-8')
+        with open(graphml_file, encoding='utf-8') as g_file:
+                edge_info = re.compile(r'\s+<edge id="\S+" source="(\S+)" target="(\S+)">\s+$')
+                edge_weight = re.compile(r'\s+<data key="key2">(\d+)</data>\s+$')
+                weights_file.write("Id_start\tId_end\tWeight")
+                for g_line in g_file:
+                        edge = edge_info.match(g_line)
+                        if(edge):
+                                start=edge.group(1)
+                                stop=edge.group(2)
+
+                        edge_w = edge_weight.match(g_line)
+                        if(edge_w):
+                                weights_file.write("{}\t{}\t{}".format(start,stop,edge_w.group(1)))
+
 def graph_analyzer(graphml_file,threshold):
         nodes = {}
         sequences = {}
@@ -27,13 +44,21 @@ def graph_analyzer(graphml_file,threshold):
                 length_info = re.compile(r'\s+<data key="key0">(\d+)</data>\s+$')
                 seq_info = re.compile(r'\s+<data key="key1">(\S+)</data>\s+$')
                 edge_info = re.compile(r'\s+<edge id="\S+" source="(\S+)" target="(\S+)">\s+$')
+                edge_weight = re.compile(r'\s+<data key="key2">(\d+)</data>\s+$')
                 end_node = re.compile(r'\s+</node>\s+$')
                 for g_line in g_file:
                         edge = edge_info.match(g_line)
                         if(edge):
-                                nodes[edge.group(1)][0].add(edge.group(2))
-                                nodes[edge.group(2)][1].add(edge.group(1))
+                                start=edge.group(1)
+                                stop=edge.group(2)
+                                nodes[start][0].add(stop)
+                                nodes[stop][1].add(start)
                                 continue
+
+                        edge_w = edge_weight.match(g_line)
+                        #if(edge_w):
+                        #        nodes[start][3].add(edge_w.group(1))
+                        #        nodes[stop][4].add(edge_w.group(1))
 
                         n=node_info.match(g_line)
                         if(n):
@@ -58,7 +83,7 @@ def graph_analyzer(graphml_file,threshold):
                 stat_file.write("#{}\t{}\n".format(vid, nodes[vid][2]) )
                 if nodes[vid][2] > int(threshold):
                         cc_num = cc_num + 1
-                        seq_file.write(">CC{}_NODE1\n{}\n".format(cc_num,sequences[vid]) )
+                        seq_file.write(">CC{}_NODE1_{}\n{}\n".format(cc_num,vid,sequences[vid]) )
         stat_file.write("\n")
 	
         vertexes = set(nodes.keys()) - isolated
@@ -86,7 +111,7 @@ def graph_analyzer(graphml_file,threshold):
                         cc_num_node = 0
                         for vid in cc_set:
                                 cc_num_node += 1
-                                seq_file.write(">CC{}_NODE{}\n{}\n".format(cc_num,cc_num_node,sequences[vid]))
+                                seq_file.write(">CC{}_NODE{}_{}\n{}\n".format(cc_num,cc_num_node,vid,sequences[vid]))
                         #seq_file.write("\n".join("CC{}_NODE:\t{}".format(cc_num,sequences[vid]) for vid in cc_set))
                         #seq_file.write("\n")
         seq_file.close()
@@ -94,6 +119,7 @@ def graph_analyzer(graphml_file,threshold):
 
 def main(arg1,arg2):
         graph_analyzer(arg1,arg2)
+        graph_weights(arg1)
     
     
 if __name__ == "__main__":
