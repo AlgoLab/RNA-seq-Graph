@@ -41,7 +41,7 @@ using namespace std;
 
 /************************************************/
 /* Convert a DNA sequnece on alphabet {A,C,G,T} */
-/* into a binary sequence                       */
+/* into a number                                */
 /************************************************/
 unsigned long long fingerprint(const string& seq){
     unsigned long long number = 0;
@@ -65,6 +65,37 @@ unsigned long long fingerprint(const string& seq){
     }//End_For
     return number;
 }//End_Method
+
+/************************************************/
+/* Convert a number into a                      */
+/* DNA sequnece on alphabet {A,C,G,T}           */
+/************************************************/
+string rev_fingerprint(unsigned long long num){
+    string seq = "";
+    while(num)
+    {
+        unsigned int n = num&3;
+        switch (n){
+        case 0:
+            seq = "a" + seq;
+            break;
+        case 1:
+            seq = "c" + seq;
+            break;
+
+        case 2:
+            seq = "g" + seq;
+            break;
+
+        case 3:
+            seq = "t" + seq;
+            break;
+        }
+        num = num>>2;
+    }
+    return seq;
+}
+
 
 /***********************************/
 /* Parse Fasta Information:        */
