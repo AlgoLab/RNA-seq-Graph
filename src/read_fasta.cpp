@@ -39,64 +39,6 @@
 using namespace seqan;
 using namespace std;
 
-/************************************************/
-/* Convert a DNA sequnece on alphabet {A,C,G,T} */
-/* into a number                                */
-/************************************************/
-unsigned long long fingerprint(const string& seq){
-    unsigned long long number = 0;
-    for(unsigned int i=0; i<seq.length(); i++){
-        number = number<<2;
-        if(seq.at(i) == 'N' || seq.at(i) == 'n'){
-            number |= 0;
-        }
-        if(seq.at(i) == 'A' || seq.at(i) == 'a'){
-            number |= 0;
-        }
-        if(seq.at(i) == 'C' || seq.at(i) == 'c'){
-            number |= 1;
-        }
-        if(seq.at(i) == 'G' || seq.at(i) == 'g'){
-            number |= 2;
-        }
-        if(seq.at(i) == 'T' || seq.at(i) == 't'){
-            number |= 3;
-        }
-    }//End_For
-    return number;
-}//End_Method
-
-/************************************************/
-/* Convert a number into a                      */
-/* DNA sequnece on alphabet {A,C,G,T}           */
-/************************************************/
-string rev_fingerprint(unsigned long long num){
-    string seq = "";
-    while(num)
-    {
-        unsigned int n = num&3;
-        switch (n){
-        case 0:
-            seq = "a" + seq;
-            break;
-        case 1:
-            seq = "c" + seq;
-            break;
-
-        case 2:
-            seq = "g" + seq;
-            break;
-
-        case 3:
-            seq = "t" + seq;
-            break;
-        }
-        num = num>>2;
-    }
-    return seq;
-}
-
-
 /***********************************/
 /* Parse Fasta Information:        */
 /* Input-> DNA sequence            */
@@ -110,7 +52,8 @@ table_entry* build_entry(String<Dna5> seq){
     assign(left_seq,prefix(seq,length(seq)/2));
     string right_seq;
     assign(right_seq,suffix(seq,length(seq)/2));
-    el = new table_entry(seq,fingerprint(left_seq),fingerprint(right_seq));
+    el = new table_entry(fingerprint(left_seq),fingerprint(right_seq));
+    //NEW_OPT el = new table_entry(seq,fingerprint(left_seq),fingerprint(right_seq));
     return el;
 }
 /*
@@ -250,13 +193,15 @@ void pruning(tables &table, int max_mismatch, int diff_threshold){
             s.insert(t);
             t = t->get_l_next();	
             while(t != NULL){
-                String<Dna5> seq = t->get_short_read()->get_RNA_seq_sequence();
+                String<Dna5> seq = t->get_RNA_seq_sequence();
+                //NEW_OPT String<Dna5> seq = t->get_short_read()->get_RNA_seq_sequence();
 		std::set< table_entry* >::iterator spliced_it;
 		bool new_s = true;
 		for ( spliced_it=s.begin() ; spliced_it != s.end();){
 			int diff = 0;
 			for(unsigned int l=0; l<length(seq); ++l){
-				if((*spliced_it)->get_short_read()->get_RNA_seq_sequence()[l] != seq[l]) diff++;
+				if((*spliced_it)->get_RNA_seq_sequence()[l] != seq[l]) diff++;
+                                //NEW_OPT if((*spliced_it)->get_short_read()->get_RNA_seq_sequence()[l] != seq[l]) diff++;
 			}
 			if(diff <= max_mismatch){
 				if((*spliced_it)->get_frequency() < t->get_frequency() && 
@@ -308,13 +253,15 @@ void pruning(tables &table, int max_mismatch, int diff_threshold){
             s.insert(t);
             t = t->get_r_next();	
             while(t != NULL){
-                String<Dna5> seq = t->get_short_read()->get_RNA_seq_sequence();
+                String<Dna5> seq = t->get_RNA_seq_sequence();
+                //NEW_OPT String<Dna5> seq = t->get_short_read()->get_RNA_seq_sequence();
 		std::set< table_entry* >::iterator spliced_it;
 		bool new_s = true;
 		for ( spliced_it=s.begin() ; spliced_it != s.end();){
 			int diff = 0;
 			for(unsigned int l=0; l<length(seq); ++l){
-				if((*spliced_it)->get_short_read()->get_RNA_seq_sequence()[l] != seq[l]) diff++;
+				if((*spliced_it)->get_RNA_seq_sequence()[l] != seq[l]) diff++;
+                                //NEW_OPT if((*spliced_it)->get_short_read()->get_RNA_seq_sequence()[l] != seq[l]) diff++;
 			}
 			if(diff <= max_mismatch){
 				if((*spliced_it)->get_frequency() < t->get_frequency() && 

@@ -78,10 +78,10 @@ int* computeBackTrackTable(string s) {
 /* between l/2 and l and link  */
 /* them to existing chains     */
 /*******************************/
-void small_blocks(::std::vector<table_entry*> & links, map<unsigned long long, string> &chains, unsigned int len,
+void small_blocks(std::vector<table_entry*> & links, map<unsigned long long, string> &chains, unsigned int len,
                   map<unsigned long long, unsigned long long>& mapping){
     map<unsigned long long, string>::iterator ch_iter;
-    ::std::vector<small_frag> short_blocks;
+    std::vector<small_frag> short_blocks;
     stack<unsigned int> s;
     for(unsigned int i=0; i<links.size(); ++i){
         for(unsigned int j=0; j<links.size(); ++j){
@@ -89,20 +89,21 @@ void small_blocks(::std::vector<table_entry*> & links, map<unsigned long long, s
                && links[j]->size_D_link() == 0 && links[j]->size_A_link() != 0 ){
                 
                 string s1,s2;
-                ::seqan::assign(s1,links[i]->get_short_read()->get_RNA_seq_sequence());
-                ::seqan::assign(s2,links[j]->get_short_read()->get_RNA_seq_sequence());
-                
+                seqan::assign(s1,links[i]->get_RNA_seq_sequence());
+                seqan::assign(s2,links[j]->get_RNA_seq_sequence());
+                //NEW_OPT seqan::assign(s1,links[i]->get_short_read()->get_RNA_seq_sequence());
+                //NEW_OPT seqan::assign(s2,links[j]->get_short_read()->get_RNA_seq_sequence());
 		//Overlap between s1 and s2 grater or equal than s1/2
                 unsigned int overlap = overlappedStringLength(s1,s2);
                 
                 if(overlap > 0 && overlap <= s1.length()/2){
-                    assign(s2,::seqan::suffix(s2,overlap));
+                    assign(s2,seqan::suffix(s2,overlap));
                     s1.append(s2);
                     //::std::cout << s1 << " " << s1.length() << ::std::endl;
                     small_frag f;
                     f.frag_links.D_chain = i;
                     f.frag_links.A_chain = j;
-                    f.frag = ::seqan::infix(s1,len, s1.length() - len);
+                    f.frag = seqan::infix(s1,len, s1.length() - len);
                     //::std::cout << overlap << " " << f.frag << " " << length(f.frag) << ::std::endl;
                     short_blocks.push_back(f);
                 }
@@ -119,7 +120,7 @@ void small_blocks(::std::vector<table_entry*> & links, map<unsigned long long, s
                 short_blocks[k].other_links.push_back(erased_links);
                 sub_seq = true;
             }
-            if(i!=k && (::seqan::length(short_blocks[i].frag)) > (::seqan::length(short_blocks[k].frag))){
+            if(i!=k && (seqan::length(short_blocks[i].frag)) > (seqan::length(short_blocks[k].frag))){
                 Finder<CharString> finder(short_blocks[i].frag);
                 Pattern<CharString, ShiftAnd> pattern(short_blocks[k].frag);
                 if(find(finder,pattern)){
@@ -143,13 +144,13 @@ void small_blocks(::std::vector<table_entry*> & links, map<unsigned long long, s
     }
 
     for(unsigned int i=0; i<short_blocks.size(); ++i){
-        //::std::cout << short_blocks[i].frag << " " << length(short_blocks[i].frag) << ::std::endl;
+        //std::cout << short_blocks[i].frag << " " << length(short_blocks[i].frag) << std::endl;
         string ch;
-        assign(ch,::seqan::prefix(short_blocks[i].frag,len));
+        assign(ch,seqan::prefix(short_blocks[i].frag,len));
         //::std::cout << ch << " " << ch.length() << ::std::endl;
         if(chains.find(fingerprint(ch)) == chains.end()){
-            chains[fingerprint(ch)] = ::seqan::toCString(short_blocks[i].frag);
-            //::std::cout << ::seqan::toCString(short_blocks[i].frag) << " " << length(short_blocks[i].frag) << ::std::endl;
+            chains[fingerprint(ch)] = seqan::toCString(short_blocks[i].frag);
+            //std::cout << seqan::toCString(short_blocks[i].frag) << " " << length(short_blocks[i].frag) << std::endl;
             mapping[fingerprint(ch)] = fingerprint(ch);
             links[short_blocks[i].frag_links.D_chain]->push_A_link(fingerprint(ch));
             links[short_blocks[i].frag_links.A_chain]->push_D_link(fingerprint(ch));
@@ -166,11 +167,11 @@ void small_blocks(::std::vector<table_entry*> & links, map<unsigned long long, s
 /* less than l/2 and link them */
 /* to existing chains          */
 /*******************************/
-void tiny_blocks(::std::vector<table_entry*> & links, map<unsigned long long, string> &chains, int len,
+void tiny_blocks(std::vector<table_entry*> & links, map<unsigned long long, string> &chains, int len,
                   map<unsigned long long, unsigned long long>& mapping, unsigned int min_length){
     //map<unsigned long long, int> graph_nodes;
     map<unsigned long long, string>::iterator ch_iter;
-    ::std::vector<small_frag> short_blocks;
+    std::vector<small_frag> short_blocks;
     stack<unsigned int> s;
 
     //::std::cerr << "Link size: " << links.size() << ::std::endl;
@@ -181,21 +182,22 @@ void tiny_blocks(::std::vector<table_entry*> & links, map<unsigned long long, st
                //&& links[j]->size_D_link() == 0 && links[j]->size_A_link() != 0 ){
                 
                 string s1,s2;
-                ::seqan::assign(s1,links[i]->get_short_read()->get_RNA_seq_sequence());
-                ::seqan::assign(s2,links[j]->get_short_read()->get_RNA_seq_sequence());
-                
+                seqan::assign(s1,links[i]->get_RNA_seq_sequence());
+                seqan::assign(s2,links[j]->get_RNA_seq_sequence());
+                //NEW_OPT seqan::assign(s1,links[i]->get_short_read()->get_RNA_seq_sequence());
+                //NEW_OPT seqan::assign(s2,links[j]->get_short_read()->get_RNA_seq_sequence());
 		//Overlap between s1 and s2 grater or equal than s1/2
                 unsigned int overlap = overlappedStringLength(s1,s2);
                 
                 if(overlap > s1.length()/2 && overlap < s1.length()-min_length){
                     //::std::cout << s1 << ::std::endl;
                     //::std::cout << s2 << ::std::endl;
-                    assign(s2,::seqan::suffix(s2,overlap));
+                    assign(s2,seqan::suffix(s2,overlap));
                     s1.append(s2);
                     small_frag f;
                     f.frag_links.D_chain = i;
                     f.frag_links.A_chain = j;
-                    f.frag = ::seqan::infix(s1,len, s1.length() - len);
+                    f.frag = seqan::infix(s1,len, s1.length() - len);
                     //::std::cout << overlap << " " << f.frag << " " << length(f.frag) << ::std::endl;
                     short_blocks.push_back(f);
                 }
@@ -265,13 +267,13 @@ void tiny_blocks(::std::vector<table_entry*> & links, map<unsigned long long, st
             ch.append(toCString(short_blocks[i].frag));
             //::std::cout << ch << " " << ch.length() << ::std::endl;
             if(chains.find(fingerprint(ch)) == chains.end()){//Start_If_5
-                chains[fingerprint(ch)] = ::seqan::toCString(short_blocks[i].frag);
-                //::std::cout << ::seqan::toCString(short_blocks[i].frag) <<" "<< length(short_blocks[i].frag)<<::std::endl;
+                chains[fingerprint(ch)] = seqan::toCString(short_blocks[i].frag);
+                //std::cout << seqan::toCString(short_blocks[i].frag) <<" "<< length(short_blocks[i].frag)<< std::endl;
                 mapping[fingerprint(ch)] = fingerprint(ch);
                 links[short_blocks[i].frag_links.D_chain]->push_A_link(fingerprint(ch));
                 links[short_blocks[i].frag_links.A_chain]->push_D_link(fingerprint(ch));
-                //::std::cout <<  links[short_blocks[i].frag_links.D_chain]->get_short_read()->get_RNA_seq_sequence() << ::std::endl;
-                //::std::cout <<  links[short_blocks[i].frag_links.A_chain]->get_short_read()->get_RNA_seq_sequence() << ::std::endl;
+                //std::cout<<links[short_blocks[i].frag_links.D_chain]->get_short_read()->get_RNA_seq_sequence()<<std::endl;
+                //std::cout<<links[short_blocks[i].frag_links.A_chain]->get_short_read()->get_RNA_seq_sequence()<<std::endl;
                 for(unsigned int j=0; j<short_blocks[i].other_links.size(); ++j){//Start_For_6
                     links[short_blocks[i].other_links[j].D_chain]->push_A_link(fingerprint(ch));
                     links[short_blocks[i].other_links[j].A_chain]->push_D_link(fingerprint(ch));
@@ -301,18 +303,21 @@ void add_linking_reads(::std::vector<table_entry*> & links, const map<unsigned l
         if(links[i]->size_D_link() != 0 && links[i]->size_A_link() == 0){
             string read_tail;
             assign(read_tail,
-                   ::seqan::suffix(links[i]->get_short_read()->get_RNA_seq_sequence(),
-                                   ::seqan::length(links[i]->get_short_read()->get_RNA_seq_sequence())-min_overlap));
-            //::std::cout << read_tail << ::std::endl;
+                   seqan::suffix(links[i]->get_RNA_seq_sequence(),
+                                 seqan::length(links[i]->get_RNA_seq_sequence())-min_overlap));
+            //NEW_OPT assign(read_tail,
+            //NEW_OPT        seqan::suffix(links[i]->get_short_read()->get_RNA_seq_sequence(),
+            //NEW_OPT                      seqan::length(links[i]->get_short_read()->get_RNA_seq_sequence())-min_overlap));
+            //std::cout << read_tail << std::endl;
             for(ch_iter = chains.begin(); ch_iter != chains.end(); ++ch_iter){
                 unsigned int q = 0;
                 while(q < min_overlap*2){
                     if(ch_iter->second.length() > min_overlap*2){
                         string chain_head;
-                        assign(chain_head,::seqan::infix(ch_iter->second,q,q+min_overlap));
+                        assign(chain_head,seqan::infix(ch_iter->second,q,q+min_overlap));
                         if(read_tail == chain_head){
                             links[i]->push_A_link(ch_iter->first);
-                            //::std::cout << "Aggiunto A " << graph_nodes[ch_iter->first] << ::std::endl;
+                            //std::cout << "Aggiunto A " << graph_nodes[ch_iter->first] << std::endl;
                         }
                     }
                     ++q;
@@ -320,25 +325,26 @@ void add_linking_reads(::std::vector<table_entry*> & links, const map<unsigned l
             }
             /*
             c++;
-            ::std::cout << c << " - " << links[i]->get_short_read()->get_RNA_seq_sequence() << ::std::endl;
-            ::std::cout << links[i]->size_D_link() << " " << links[i]->size_A_link() << ::std::endl;
+            std::cout << c << " - " << links[i]->get_short_read()->get_RNA_seq_sequence() << std::endl;
+            std::cout << links[i]->size_D_link() << " " << links[i]->size_A_link() << std::endl;
             for(int j=0; j<links[i]->size_D_link(); ++j){
                 if(graph_nodes.find(links[i]->at_D_link(j)) != graph_nodes.end()){
-                    ::std::cout << "D " << graph_nodes[links[i]->at_D_link(j)] << ::std::endl;
+                    std::cout << "D " << graph_nodes[links[i]->at_D_link(j)] << std::endl;
                 }
             }
             */
         }
         if(links[i]->size_A_link() != 0 && links[i]->size_D_link() == 0){
             string read_head;
-            assign(read_head,::seqan::prefix(links[i]->get_short_read()->get_RNA_seq_sequence(),min_overlap));
-            //::std::cout << read_head << ::std::endl;
+            assign(read_head,seqan::prefix(links[i]->get_RNA_seq_sequence(),min_overlap));
+            //NEW_OPT assign(read_head,seqan::prefix(links[i]->get_short_read()->get_RNA_seq_sequence(),min_overlap));
+            //std::cout << read_head << std::endl;
             for(ch_iter = chains.begin(); ch_iter != chains.end(); ++ch_iter){
                 unsigned int q = 0;
                 while(q < min_overlap*2){
                     if(ch_iter->second.length() > min_overlap*2){
                         string chain_tail;
-                        assign(chain_tail,::seqan::infix(ch_iter->second,ch_iter->second.length()-q-min_overlap,
+                        assign(chain_tail,seqan::infix(ch_iter->second,ch_iter->second.length()-q-min_overlap,
                                                          ch_iter->second.length()-q));
                         if(read_head == chain_tail){
                             links[i]->push_D_link(ch_iter->first);
@@ -350,11 +356,11 @@ void add_linking_reads(::std::vector<table_entry*> & links, const map<unsigned l
             }
             /*
             c++;
-            ::std::cout << c << " - " << links[i]->get_short_read()->get_RNA_seq_sequence() << ::std::endl;
-            ::std::cout << links[i]->size_D_link() << " " << links[i]->size_A_link() << ::std::endl;
+            std::cout << c << " - " << links[i]->get_short_read()->get_RNA_seq_sequence() << std::endl;
+            std::cout << links[i]->size_D_link() << " " << links[i]->size_A_link() << std::endl;
             for(int k=0; k<links[i]->size_A_link(); ++k){
                 if(graph_nodes.find(links[i]->at_A_link(k)) != graph_nodes.end()){
-                    ::std::cout << "A " << graph_nodes[links[i]->at_A_link(k)] << ::std::endl;
+                    std::cout << "A " << graph_nodes[links[i]->at_A_link(k)] << std::endl;
                 }
             }
             */
@@ -373,11 +379,12 @@ void linking_refinement(::std::vector<table_entry*> & links, map<unsigned long l
     for(unsigned int i=0; i<links.size(); ++i){
         //Linkato solo a dx
         if(links[i]->size_D_link() == 0 && links[i]->size_A_link() != 0){
-            //::std::cout << "D link" << ::std::endl;
-            CharString p = ::seqan::prefix(links[i]->get_short_read()->get_RNA_seq_sequence(),len);
+            //std::cout << "D link" << std::endl;
+            CharString p = seqan::prefix(links[i]->get_RNA_seq_sequence(),len);
+            //NEW_OPT CharString p = seqan::prefix(links[i]->get_short_read()->get_RNA_seq_sequence(),len);
             Pattern<CharString, ShiftOr > pattern(p);
-            ::std::map<unsigned long long, string>::iterator chain_it;
-            ::std::set<unsigned long long> modif_chains;
+            std::map<unsigned long long, string>::iterator chain_it;
+            std::set<unsigned long long> modif_chains;
             for(chain_it = chains.begin(); chain_it != chains.end(); ++chain_it){ 
                 
                 CharString text = chain_it->second;
@@ -387,10 +394,10 @@ void linking_refinement(::std::vector<table_entry*> & links, map<unsigned long l
                     links[i]->push_D_link(chain_it->first);
                     if(chain_it->second.length()- endPosition(finder) > len){
                         //::std::cout << "D " << (i+1) << " " << beginPosition(finder) << ::std::endl;
-                        CharString pre = ::seqan::prefix(chain_it->second, beginPosition(finder) + len);
-                        string str_pre = ::seqan::toCString(pre);
-                        CharString suf = ::seqan::suffix(chain_it->second, beginPosition(finder) + len);
-                        string str_suf = ::seqan::toCString(suf);
+                        CharString pre = seqan::prefix(chain_it->second, beginPosition(finder) + len);
+                        string str_pre = seqan::toCString(pre);
+                        CharString suf = seqan::suffix(chain_it->second, beginPosition(finder) + len);
+                        string str_suf = seqan::toCString(suf);
                         //::std::cout << chain_it->second << " - " << chain_it->second.length() << ::std::endl;
                         //Sono sicuro che sia > len dato che la estraggo da un prefisso
                         //di lunghezza len...
@@ -400,7 +407,7 @@ void linking_refinement(::std::vector<table_entry*> & links, map<unsigned long l
                         //...ma il suffissopotrebbe essere piu' corto di len
                         string head;
                         if(str_suf.length() >= len){
-                            head = ::seqan::toCString(::seqan::prefix(suf,len));
+                            head = seqan::toCString(seqan::prefix(suf,len));
                             chains[fingerprint(head)] = str_suf;
                             mapping[fingerprint(head)] = fingerprint(head);
                         }else{
@@ -422,10 +429,11 @@ void linking_refinement(::std::vector<table_entry*> & links, map<unsigned long l
                         }
                         //Aggiungere un link tra le due catene create
                         CharString l_part = chains[chain_it->first];
-                        string new_link = ::seqan::toCString(::seqan::suffix(l_part,length(l_part) - len));
+                        string new_link = seqan::toCString(seqan::suffix(l_part,length(l_part) - len));
                         unsigned long long f_l = fingerprint(new_link);
-                        new_link.append(head);
-                        table_entry* t_new = new table_entry(new_link,f_l,fingerprint(head));
+                        //NEW_OPT new_link.append(head);
+                        table_entry* t_new = new table_entry(f_l,fingerprint(head));
+                        //NEW_OPT table_entry* t_new = new table_entry(new_link,f_l,fingerprint(head));
                         t_new->push_D_link(chain_it->first);
                         t_new->push_A_link(fingerprint(head));
                         links.push_back(t_new);
@@ -437,10 +445,11 @@ void linking_refinement(::std::vector<table_entry*> & links, map<unsigned long l
         //Linkato solo a sx
         if(links[i]->size_A_link() == 0 && links[i]->size_D_link() != 0){
             //::std::cout << "A link" << ::std::endl;
-            CharString p = ::seqan::suffix(links[i]->get_short_read()->get_RNA_seq_sequence(),len);
+            CharString p = seqan::suffix(links[i]->get_RNA_seq_sequence(),len);
+            //NEW_OPT CharString p = seqan::suffix(links[i]->get_short_read()->get_RNA_seq_sequence(),len);
             Pattern<CharString, ShiftOr > pattern(p);
-            ::std::map<unsigned long long, string>::iterator chain_it;
-            ::std::set<unsigned long long> modif_chains;
+            std::map<unsigned long long, string>::iterator chain_it;
+            std::set<unsigned long long> modif_chains;
             for(chain_it = chains.begin(); chain_it != chains.end(); ++chain_it){ 
                 CharString text = chain_it->second;
                 Finder<CharString> finder(text);
@@ -453,16 +462,16 @@ void linking_refinement(::std::vector<table_entry*> & links, map<unsigned long l
                     }
                     if(endPosition(finder) > len){
                         //::std::cout << "A " << (i+1) << " " << beginPosition(finder) << ::std::endl;
-                        CharString pre = ::seqan::prefix(chain_it->second, beginPosition(finder) + len);
-                        string str_pre = ::seqan::toCString(pre);
-                        CharString suf = ::seqan::suffix(chain_it->second, beginPosition(finder) + len);
-                        string str_suf = ::seqan::toCString(suf);
+                        CharString pre = seqan::prefix(chain_it->second, beginPosition(finder) + len);
+                        string str_pre = seqan::toCString(pre);
+                        CharString suf = seqan::suffix(chain_it->second, beginPosition(finder) + len);
+                        string str_suf = seqan::toCString(suf);
                         chains[chain_it->first] = str_pre;
                         //::std::cout << str_pre << " - " << str_pre.length() << ::std::endl;
                         modif_chains.insert(chain_it->first);
                         string head;
                         if(str_suf.length() >= len){
-                            head = ::seqan::toCString(::seqan::prefix(suf,len));
+                            head = seqan::toCString(seqan::prefix(suf,len));
                             chains[fingerprint(head)] = str_suf;
                             mapping[fingerprint(head)] = fingerprint(head);
                         }else{
@@ -484,10 +493,11 @@ void linking_refinement(::std::vector<table_entry*> & links, map<unsigned long l
                         }
                         //Aggiungere un link tra le due catene create
                         CharString l_part = chains[chain_it->first];
-                        string new_link = ::seqan::toCString(::seqan::suffix(l_part,length(l_part) - len));
+                        string new_link = seqan::toCString(seqan::suffix(l_part,length(l_part) - len));
                         unsigned long long f_l = fingerprint(new_link);
-                        new_link.append(head);
-                        table_entry* t_new = new table_entry(new_link,f_l,fingerprint(head));
+                        //NEW_OPT new_link.append(head);
+                        table_entry* t_new = new table_entry(f_l,fingerprint(head));
+                        //NEW_OPT table_entry* t_new = new table_entry(new_link,f_l,fingerprint(head));
                         t_new->push_D_link(chain_it->first);
                         t_new->push_A_link(fingerprint(head));
                         links.push_back(t_new);
@@ -506,12 +516,12 @@ void linking_refinement(::std::vector<table_entry*> & links, map<unsigned long l
 /* between existing nodes that  */
 /* could be a node itself       */
 /********************************/
-void check_overlapping_nodes(::std::vector<table_entry*> & links, map<unsigned long long, string> & chains, int len,
-                             ::std::map<unsigned long long, unsigned long long>& mapping, unsigned int min_overlap,
+void check_overlapping_nodes(std::vector<table_entry*> & links, map<unsigned long long, string> & chains, int len,
+                             std::map<unsigned long long, unsigned long long>& mapping, unsigned int min_overlap,
                              int ov_perc){
-    ::std::map<unsigned long long, string>::iterator chain_it;
-    ::std::map<unsigned long long, string>::iterator chain_it_2;
-    ::std::vector<small_frag> short_blocks;
+    std::map<unsigned long long, string>::iterator chain_it;
+    std::map<unsigned long long, string>::iterator chain_it_2;
+    std::vector<small_frag> short_blocks;
     stack<unsigned int> s;
     queue<unsigned long long> q;
     for(chain_it = chains.begin(); chain_it != chains.end(); ++chain_it){
@@ -521,21 +531,22 @@ void check_overlapping_nodes(::std::vector<table_entry*> & links, map<unsigned l
                (ov_perc*ov < chain_it_2->second.length())/100 && ov > min_overlap){
                 bool new_node = false;
                 CharString pat_text=prefix(chain_it_2->second,ov);
-                //::std::cout << chain_it->second << ::std::endl;
-                //::std::cout << chain_it_2->second << ::std::endl;
-                //::std::cout << ov << ::std::endl;
+                //std::cout << chain_it->second << std::endl;
+                //std::cout << chain_it_2->second << std::endl;
+                //std::cout << ov << std::endl;
                 Pattern<CharString, ShiftAnd> pattern(pat_text);
                 for(unsigned int i=0; i<links.size();++i){
-                    CharString link_read = links[i]->get_short_read()->get_RNA_seq_sequence();
+                    CharString link_read = links[i]->get_RNA_seq_sequence();
+                    //NEW_OPT CharString link_read = links[i]->get_short_read()->get_RNA_seq_sequence();
                     Finder<CharString> finder(link_read);
                     if(find(finder,pattern) && (
                        prefix(link_read,beginPosition(finder)) == infix(chain_it->second,chain_it->second.length()-ov-beginPosition(finder),chain_it->second.length()-ov) ||
                        suffix(link_read,length(link_read) - endPosition(finder)) == infix(chain_it_2->second,ov,ov+endPosition(finder)))){
-                        //::std::cout << link_read << ::std::endl;
-                        //::std::cout << prefix(link_read,beginPosition(finder)) << ::std::endl;
-                        //::std::cout << infix(chain_it->second,chain_it->second.length()-ov-beginPosition(finder),chain_it->second.length()-ov) << ::std::endl;
-                        //::std::cout << suffix(link_read,length(link_read) - endPosition(finder)) << ::std::endl;
-                        //::std::cout << infix(chain_it_2->second,ov,ov+endPosition(finder)) << ::std::endl;
+                        //std::cout << link_read << std::endl;
+                        //std::cout << prefix(link_read,beginPosition(finder)) << std::endl;
+                        //std::cout << infix(chain_it->second,chain_it->second.length()-ov-beginPosition(finder),chain_it->second.length()-ov) << std::endl;
+                        //std::cout << suffix(link_read,length(link_read) - endPosition(finder)) << std::endl;
+                        //std::cout << infix(chain_it_2->second,ov,ov+endPosition(finder)) << std::endl;
                       
                         new_node = true;
                     }
@@ -549,17 +560,17 @@ void check_overlapping_nodes(::std::vector<table_entry*> & links, map<unsigned l
                 }
             }else{
                 if(chain_it != chain_it_2 && ov>=(ov_perc*chain_it->second.length())/100){
-                    //::std::cout << "Chain_it sub-node of Chain_it_2" << ::std::endl;
-                    //::std::cout << "Chain_it " << chain_it->second << ::std::endl;
-                    //::std::cout << "Chain_it_2 " << chain_it_2->second << ::std::endl;
-                    //::std::cout << ov << ::std::endl;
+                    //std::cout << "Chain_it sub-node of Chain_it_2" << std::endl;
+                    //std::cout << "Chain_it " << chain_it->second << std::endl;
+                    //std::cout << "Chain_it_2 " << chain_it_2->second << std::endl;
+                    //std::cout << ov << std::endl;
                     q.push(chain_it->first);
                 }else{
                     if(chain_it != chain_it_2 && ov>=(ov_perc*chain_it_2->second.length())/100){
-                        //::std::cout << "Chain_it_2 sub-node of Chain_it" << ::std::endl;
-                        //::std::cout << "Chain_it " << chain_it->second << ::std::endl;
-                        //::std::cout << "Chain_it_2 " <<chain_it_2->second << ::std::endl;
-                        //::std::cout << ov << ::std::endl;
+                        //std::cout << "Chain_it_2 sub-node of Chain_it" << std::endl;
+                        //std::cout << "Chain_it " << chain_it->second << std::endl;
+                        //std::cout << "Chain_it_2 " <<chain_it_2->second << std::endl;
+                        //std::cout << ov << std::endl;
                         q.push(chain_it_2->first);
                     }
                 }
@@ -577,7 +588,7 @@ void check_overlapping_nodes(::std::vector<table_entry*> & links, map<unsigned l
                 short_blocks[k].other_links.push_back(erased_links);
                 sub_seq = true;
             }
-            if(i!=k && (::seqan::length(short_blocks[i].frag)) < (::seqan::length(short_blocks[k].frag))){
+            if(i!=k && (seqan::length(short_blocks[i].frag)) < (seqan::length(short_blocks[k].frag))){
                 Finder<CharString> finder(short_blocks[k].frag);
                 Pattern<CharString, ShiftAnd> pattern(short_blocks[i].frag);
                 if(find(finder,pattern)){
@@ -619,8 +630,9 @@ void check_overlapping_nodes(::std::vector<table_entry*> & links, map<unsigned l
             string first_half;
             assign(first_half,prefix(chains[short_blocks[i].frag_links.D_chain],len));
             string new_link_1 = first_half;
-            new_link_1.append(ch);
-            table_entry* link_1 = new table_entry(new_link_1,fingerprint(first_half),fingerprint(ch));
+            //NEW_OPT new_link_1.append(ch);
+            table_entry* link_1 = new table_entry(fingerprint(first_half),fingerprint(ch));
+            //NEW_OPT table_entry* link_1 = new table_entry(new_link_1,fingerprint(first_half),fingerprint(ch));
             link_1->push_D_link(short_blocks[i].frag_links.D_chain);
             link_1->push_A_link(short_blocks[i].frag_links.A_chain);
             links.push_back(link_1);
@@ -635,15 +647,16 @@ void check_overlapping_nodes(::std::vector<table_entry*> & links, map<unsigned l
             link_2->push_A_link(short_blocks[i].frag_links.A_chain);
             links.push_back(link_2);
             */
-            //::std::cout<<links[short_blocks[i].frag_links.D_chain]->get_short_read()->get_RNA_seq_sequence()<<::std::endl;
-            //::std::cout<<links[short_blocks[i].frag_links.A_chain]->get_short_read()->get_RNA_seq_sequence()<<::std::endl;
+            //std::cout<< links[short_blocks[i].frag_links.D_chain]->get_short_read()->get_RNA_seq_sequence()<< std::endl;
+            //std::cout<< links[short_blocks[i].frag_links.A_chain]->get_short_read()->get_RNA_seq_sequence()<< std::endl;
 
             for(unsigned int j=0; j<short_blocks[i].other_links.size(); ++j){//Start_For_6
                 string second_half;
                 assign(first_half,prefix(chains[short_blocks[i].other_links[j].D_chain],len));
                 string new_link_2 = second_half;
-                new_link_2.append(ch);
-                table_entry* link_2 = new table_entry(new_link_2,fingerprint(second_half),fingerprint(ch));
+                //NEW_OPT new_link_2.append(ch);
+                table_entry* link_2 = new table_entry(fingerprint(second_half),fingerprint(ch));
+                //NEW_OPT table_entry* link_2 = new table_entry(new_link_2,fingerprint(second_half),fingerprint(ch));
                 link_2->push_D_link(short_blocks[i].other_links[j].D_chain);
                 link_2->push_A_link(short_blocks[i].other_links[j].A_chain);
                 links.push_back(link_1);
