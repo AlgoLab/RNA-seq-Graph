@@ -90,6 +90,7 @@ int main(int argc, char* argv[]){
         while(!ref.eof()){
             readMeta(ref, fasta_tag, Fasta());
             read(ref, read_seq, Fasta());
+            if(length(read_seq)< READ_LEN){ continue;}
             string read_tag;
             assign(read_tag,fasta_tag);
             read_size+=((length(fasta_tag)*sizeof(char))+(length(read_seq)*sizeof(char)));
