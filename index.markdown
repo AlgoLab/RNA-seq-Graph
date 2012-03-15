@@ -181,7 +181,7 @@ the same graph in _GDL_ format (<http://www.absint.com/aisee/manual/windows/node
 It also print on standard output the graph in GraphML format; this latter can be 
 redirected into a file in order to visualize or export it.
 By default the files are _RNA-seq-graph.txt_ and _RNA-seq-graph.gdl_ .
-For exmaple:
+For example:
 
     $ ./bin/build_RNA_seq_graph --reads Raw_file.fa > RNA-seq-graph.graphml
 
