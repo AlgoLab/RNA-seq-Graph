@@ -33,6 +33,7 @@
 #include <seqan/sequence.h>
 #include <seqan/file.h>
 
+#include "configuration.h"
 //#include "utils.cpp"
 
 using namespace seqan;
@@ -87,7 +88,27 @@ class table_entry{
     void set_chain_prev(table_entry*);
 
     //Get Methods
-    string get_RNA_seq_sequence() const;
+    string get_RNA_seq_sequence() const{
+	static const char* alph= "ACGT";
+	unsigned long long f1=left_fingerprint;
+	unsigned long long f2=right_fingerprint;
+	string seq(READ_LEN,' ');
+	int n_shift = 0;
+	
+	while(n_shift < READ_LEN/2){
+        	unsigned int n = f2&3;
+		n_shift++;
+        	seq[READ_LEN-n_shift]=alph[n];
+        	f2 = f2>>2;        	
+    	}
+    	while(n_shift < READ_LEN){
+        	unsigned int n = f1&3;
+		n_shift++;
+        	seq[READ_LEN-n_shift]=alph[n];
+        	f1 = f1>>2;        	
+    	}
+    	return seq;
+    }
     //NEW_OPT RNA_seq* get_short_read() const;
     table_entry* get_l_next() const;
     table_entry* get_l_prev() const;

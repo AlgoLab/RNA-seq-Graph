@@ -43,7 +43,7 @@ action:
 	@echo "Compiling..."
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp Makefile
-	echo '* Compiling $<'; \
+	@echo '* Compiling $<'; \
 	mkdir -pv $(dir $@) ; \
 	$(CXX) $(CXXFLAGS) -o $@ -c $<
 

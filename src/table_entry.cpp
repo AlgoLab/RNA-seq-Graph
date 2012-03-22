@@ -29,6 +29,7 @@
 #include "configuration.h"
 #include "table_entry.h"
 
+
 /************************************************/
 /* Convert a DNA sequnece on alphabet {A,C,G,T} */
 /* into a number                                */
@@ -56,37 +57,6 @@ unsigned long long fingerprint(const string& seq){
     return number;
 }//End_Method
 
-/************************************************/
-/* Convert a number into a                      */
-/* DNA sequnece on alphabet {A,C,G,T}           */
-/************************************************/
-string rev_fingerprint(unsigned long long num){
-    string seq = "";
-    int n_shift = 0;
-    while(n_shift < READ_LEN/2)
-    {
-        unsigned int n = num&3;
-        switch (n){
-        case 0:
-            seq = "A" + seq;
-            break;
-        case 1:
-            seq = "C" + seq;
-            break;
-
-        case 2:
-            seq = "G" + seq;
-            break;
-
-        case 3:
-            seq = "T" + seq;
-            break;
-        }
-        num = num>>2;
-        n_shift++;
-    }
-    return seq;
-}
 
 //Constructors
 table_entry::table_entry(unsigned long long left_f, unsigned long long right_f){
@@ -266,11 +236,7 @@ void table_entry::set_chain_next(table_entry* chain_next){
 void table_entry::set_chain_prev(table_entry* chain_prev){
     this->chain_prev = chain_prev;
 }
-
 //Get Methods
-string table_entry::get_RNA_seq_sequence() const{
-    return (rev_fingerprint(left_fingerprint) + rev_fingerprint(right_fingerprint));
-}
 
 /* NEW_OPT
 RNA_seq* table_entry::get_short_read() const{

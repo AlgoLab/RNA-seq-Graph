@@ -46,9 +46,6 @@ struct tables{
 //Convert DNA sequence into binary
 unsigned long long fingerprint(const string&);
 
-//Convert a number into a DNA sequence
-string rev_fingerprint(unsigned long long);
-
 //Parse Fasta Information
 table_entry* parse_fasta(String<Dna5>, string);
 
