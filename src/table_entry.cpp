@@ -59,6 +59,7 @@ unsigned long long fingerprint(const string& seq){
 
 
 //Constructors
+#if defined(LOW_MEM_USG)
 table_entry::table_entry(unsigned long long left_f, unsigned long long right_f){
 
     this->l_next = NULL;
@@ -72,6 +73,26 @@ table_entry::table_entry(unsigned long long left_f, unsigned long long right_f){
     this->chain_prev = NULL;
     this->frequency = 1;
 }
+#endif
+
+#if !defined(LOW_MEM_USG)
+table_entry::table_entry(String<Dna5>seq, unsigned long long left_f, unsigned long long right_f){
+    seqan::assign(short_read,seq);
+    this->l_next = NULL;
+    this->l_prev = NULL;
+    this->r_next = NULL;
+    this->r_prev = NULL;
+
+    this->left_fingerprint = left_f;
+    this->right_fingerprint = right_f;
+    //this->junction_offset = 0;
+    this->chain_next = NULL;
+    this->chain_prev = NULL;
+    this->frequency = 1;
+}
+#endif
+
+
 /* NEW_OPT 
 table_entry::table_entry(String<Dna5> seq,
                          unsigned long long left_f, unsigned long long right_f){

@@ -431,9 +431,14 @@ void linking_refinement(::std::vector<table_entry*> & links, map<unsigned long l
                         CharString l_part = chains[chain_it->first];
                         string new_link = seqan::toCString(seqan::suffix(l_part,length(l_part) - len));
                         unsigned long long f_l = fingerprint(new_link);
-                        //NEW_OPT new_link.append(head);
+#if defined(LOW_MEM_USG)
                         table_entry* t_new = new table_entry(f_l,fingerprint(head));
-                        //NEW_OPT table_entry* t_new = new table_entry(new_link,f_l,fingerprint(head));
+#endif
+
+#if !defined(LOW_MEM_USG)
+                        new_link.append(head);
+                        table_entry* t_new = new table_entry(new_link,f_l,fingerprint(head));
+#endif
                         t_new->push_D_link(chain_it->first);
                         t_new->push_A_link(fingerprint(head));
                         links.push_back(t_new);
@@ -495,9 +500,14 @@ void linking_refinement(::std::vector<table_entry*> & links, map<unsigned long l
                         CharString l_part = chains[chain_it->first];
                         string new_link = seqan::toCString(seqan::suffix(l_part,length(l_part) - len));
                         unsigned long long f_l = fingerprint(new_link);
-                        //NEW_OPT new_link.append(head);
+#if defined(LOW_MEM_USG)
                         table_entry* t_new = new table_entry(f_l,fingerprint(head));
-                        //NEW_OPT table_entry* t_new = new table_entry(new_link,f_l,fingerprint(head));
+#endif
+
+#if !defined(LOW_MEM_USG)
+                        new_link.append(head);
+                        table_entry* t_new = new table_entry(new_link,f_l,fingerprint(head));
+#endif
                         t_new->push_D_link(chain_it->first);
                         t_new->push_A_link(fingerprint(head));
                         links.push_back(t_new);
@@ -630,9 +640,14 @@ void check_overlapping_nodes(std::vector<table_entry*> & links, map<unsigned lon
             string first_half;
             assign(first_half,prefix(chains[short_blocks[i].frag_links.D_chain],len));
             string new_link_1 = first_half;
-            //NEW_OPT new_link_1.append(ch);
+#if defined(LOW_MEM_USG)
             table_entry* link_1 = new table_entry(fingerprint(first_half),fingerprint(ch));
-            //NEW_OPT table_entry* link_1 = new table_entry(new_link_1,fingerprint(first_half),fingerprint(ch));
+#endif
+
+#if !defined(LOW_MEM_USG)
+            new_link_1.append(ch);
+            table_entry* link_1 = new table_entry(new_link_1,fingerprint(first_half),fingerprint(ch));
+#endif
             link_1->push_D_link(short_blocks[i].frag_links.D_chain);
             link_1->push_A_link(short_blocks[i].frag_links.A_chain);
             links.push_back(link_1);
@@ -654,9 +669,14 @@ void check_overlapping_nodes(std::vector<table_entry*> & links, map<unsigned lon
                 string second_half;
                 assign(first_half,prefix(chains[short_blocks[i].other_links[j].D_chain],len));
                 string new_link_2 = second_half;
-                //NEW_OPT new_link_2.append(ch);
+#if defined(LOW_MEM_USG)
                 table_entry* link_2 = new table_entry(fingerprint(second_half),fingerprint(ch));
-                //NEW_OPT table_entry* link_2 = new table_entry(new_link_2,fingerprint(second_half),fingerprint(ch));
+#endif
+
+#if !defined(LOW_MEM_USG)
+                new_link_2.append(ch);
+                table_entry* link_2 = new table_entry(new_link_2,fingerprint(second_half),fingerprint(ch));
+#endif
                 link_2->push_D_link(short_blocks[i].other_links[j].D_chain);
                 link_2->push_A_link(short_blocks[i].other_links[j].A_chain);
                 links.push_back(link_1);

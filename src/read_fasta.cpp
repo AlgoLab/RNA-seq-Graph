@@ -52,8 +52,13 @@ table_entry* build_entry(String<Dna5> seq){
     assign(left_seq,prefix(seq,length(seq)/2));
     string right_seq;
     assign(right_seq,suffix(seq,length(seq)/2));
+#if defined(LOW_MEM_USG)
     el = new table_entry(fingerprint(left_seq),fingerprint(right_seq));
-    //NEW_OPT el = new table_entry(seq,fingerprint(left_seq),fingerprint(right_seq));
+#endif
+
+#if !defined(LOW_MEM_USG)
+    el = new table_entry(seq,fingerprint(left_seq),fingerprint(right_seq));
+#endif
     return el;
 }
 /*
@@ -336,8 +341,11 @@ int read_fasta(char* file_name, tables &t){
         ::std::fstream fstrm;
         fstrm.open(file_name, ::std::ios_base::in | ::std::ios_base::binary);
         if(fstrm.is_open()){
+#if defined(LOW_MEM_USG)
+	    std::cerr << "Memory optimized process stared" << std::endl;
+#endif
 	    clock_t tStart = clock();
-            ::std::cerr << "Processing RNA-seq file..." << ::std::endl;
+            std::cerr << "Processing RNA-seq file..." << std::endl;
             String<char> fasta_tag;
             String<Dna5> fasta_seq;
             int c = 0;

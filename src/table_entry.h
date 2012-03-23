@@ -43,6 +43,9 @@ using namespace std;
 
 class table_entry{
     private:
+#if !defined(LOW_MEM_USG)
+    string short_read;
+#endif
     // NEW_OPT RNA_seq* short_read;
     //Table List
     table_entry* r_next;
@@ -65,8 +68,13 @@ class table_entry{
     std::vector<unsigned long long> D_delta;
     std::vector<unsigned long long> A_delta;
     //Constructors
+#if defined(LOW_MEM_USG)
     table_entry(unsigned long long, unsigned long long);
-    //NEW_OPT table_entry(String<Dna5>, unsigned long long, unsigned long long);
+#endif
+
+#if !defined(LOW_MEM_USG)
+    table_entry(String<Dna5>, unsigned long long, unsigned long long);
+#endif
     //table_entry(String<Dna5>, string, string, unsigned long long, unsigned long long);
     //table_entry(String<Dna5>, string, string, int, unsigned long long, unsigned long long);
     //table_entry(String<Dna5>, string, string, int, int, long, int, unsigned long long, unsigned long long);
@@ -88,6 +96,7 @@ class table_entry{
     void set_chain_prev(table_entry*);
 
     //Get Methods
+#if defined(LOW_MEM_USG)
     string get_RNA_seq_sequence() const{
 	static const char* alph= "ACGT";
 	unsigned long long f1=left_fingerprint;
@@ -109,6 +118,14 @@ class table_entry{
     	}
     	return seq;
     }
+#endif
+
+#if !defined(LOW_MEM_USG)
+    string get_RNA_seq_sequence() const{
+	return short_read;
+    }
+#endif
+
     //NEW_OPT RNA_seq* get_short_read() const;
     table_entry* get_l_next() const;
     table_entry* get_l_prev() const;

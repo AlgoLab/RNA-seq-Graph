@@ -35,6 +35,10 @@ CFLAGS+= -g -Wall -O2 -UNDEBUG -march=native -Wno-deprecated
 CXXFLAGS+= ${CFLAGS}
 LIBS = -l boost_graph
 
+.PHONY: low_mem
+low_mem: CXXFLAGS=${CFLAGS} -D LOW_MEM_USG
+low_mem: all
+
 .PHONY: all
 all:action read_input
 
@@ -54,7 +58,7 @@ read_input_OBJS= \
 	${OBJ_DIR}/build_chains.o \
 	${OBJ_DIR}/read_fasta.o \
 	${OBJ_DIR}/table_entry.o \
-	${OBJ_DIR}/RNA_seq.o \
+	#${OBJ_DIR}/RNA_seq.o \
 
 ${BIN_DIR}/build_RNA_seq_graph: ${read_input_OBJS}
 	@echo 'Linking $@'; \
