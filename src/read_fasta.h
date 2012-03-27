@@ -25,15 +25,7 @@
 #ifndef READ_FASTA_H
 #define READ_FASTA_H
 
-#include <map>
-#include <string>
-
-#include <seqan/sequence.h>
-#include <seqan/file.h>
-
 #include "table_entry.h"
-
-using namespace seqan;
 
 //Elements of the hash tables
 struct element_table{

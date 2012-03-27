@@ -30,15 +30,14 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/graphml.hpp>
 
+#include "configuration.h"
 #include "join_chains.h"
 #include "build_chains.h"
-//Comment to disable GDL output
-#define GDL_OUT
 
 /******************************/
 /* Build and print the graph  */
 /******************************/
-void print_graph(::std::vector<table_entry*> links, const map<unsigned long long, string> chains,
+void print_graph(std::vector<table_entry*> links, const map<unsigned long long, string> chains,
                  map<unsigned long long, unsigned long long> mapping, char* graphML_out_file){
     map<unsigned long long, string>::const_iterator ch_iter;
     map<unsigned long long, int> graph_nodes;
@@ -70,12 +69,35 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
     gdl_file << "\tnode.width\t: 80\n";
 #endif
 
+#ifdef SIGNIFICATIVE
+    string sign_file_name = "";
+    if(graphML_out_file == NULL){
+	sign_file_name = "RNA-seq-graph_sign.gdl";
+    }else{
+	sign_file_name = graphML_out_file;
+	sign_file_name += "_sign.gdl";
+    }
+    //Significative GDL file
+    ofstream sign_file;
+    sign_file.open(sign_file_name.c_str());
+    //GDL header
+    sign_file << "graph: {\n";
+    sign_file << "\tnode.shape\t: circle\n";
+    sign_file << "\tnode.height\t: 80\n";
+    sign_file << "\tnode.width\t: 80\n";
+
+    //Significative nodes
+    std::set<unsigned long long> sign_nodes;
+#endif
+
     //GraphML
     typedef boost::property<boost::vertex_name_t, int, 
         boost::property<boost::vertex_color_t, std::string> > VertexProperty;
 
+    typedef boost::property<boost::edge_weight_t, long> EdgeProperty; 
+
     typedef boost::adjacency_list< boost::vecS, boost::vecS, boost::directedS,
-         VertexProperty> Graph;
+        VertexProperty, EdgeProperty> Graph;
 
     std::vector<std::string> vertex_names;
     for(ch_iter = chains.begin(); ch_iter != chains.end(); ++ch_iter){
@@ -85,7 +107,7 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
         graph_nodes[ch_iter->first] = node_id;
 #ifdef GDL_OUT        
         //GDL nodes
-        gdl_file << "\t node: {\n";
+        gdl_file << "\tnode: {\n";
         gdl_file << "\t\t title: \"" << node_id << "\"\n";
         gdl_file << "\t\t label: \"" << node_id << " - " << ch_iter->second.length() << "\"\n";
         gdl_file << "\t\t //" << ch_iter->second << "\n";
@@ -93,6 +115,13 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
         //File output
         out_file << "node#" << node_id << " " << ch_iter->second << "\n"; 
 #endif
+
+#ifdef SIGNIFICATIVE
+        if(ch_iter->second.length() > MIN_SIGN_LENGTH){
+            sign_nodes.insert(ch_iter->first);
+        }
+#endif
+
     }
 
     //Graph Initialization
@@ -127,6 +156,7 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
                         gdl_file << "\t edge: {\n";
                         gdl_file << "\t\t source: \"" << graph_nodes[mapping[links[i]->at_D_link(j)]] << "\"\n";
                         gdl_file << "\t\t target: \"" << graph_nodes[mapping[links[i]->at_A_link(k)]] << "\"\n";
+                        gdl_file << "\t\t label: \"" << links[i]->get_frequency() << "\"\n";
                         gdl_file << "\t}\n";
 			#endif
                         
@@ -139,8 +169,14 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
                         out_file << graph_nodes[mapping[links[i]->at_D_link(j)]] << ";";
                         out_file << graph_nodes[mapping[links[i]->at_A_link(k)]] << "\n";
 			#endif
+
+                        #ifdef SIGNIFICATIVE
+                        sign_nodes.insert(mapping[links[i]->at_D_link(j)]);
+                        sign_nodes.insert(mapping[links[i]->at_A_link(k)]);
+                        #endif
+
 			//Graphml arcs
-                        ::boost::add_edge(source-1,target-1,ug);
+                        boost::add_edge(source-1,target-1,links[i]->get_frequency(),ug);
                     }
                 }
             }//End_For
@@ -151,6 +187,35 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
 #ifdef GDL_OUT
     gdl_file << "}";
 #endif
+
+#ifdef SIGNIFICATIVE
+    std::set<unsigned long long>::iterator sign_it;
+    for(sign_it = sign_nodes.begin(); sign_it != sign_nodes.end(); ++sign_it){
+        sign_file << "\tnode: {\n";
+        sign_file << "\t\t title: \"" << graph_nodes[*sign_it] << "\"\n";
+        sign_file << "\t\t label: \"" << graph_nodes[*sign_it] << " - " << chains.find(*sign_it)->second.length() << "\"\n";
+        sign_file << "\t\t //" << chains.find(*sign_it)->second << "\n";
+        sign_file << "\t}\n";
+    }
+    for(unsigned int i=0; i<links.size(); ++i){
+        for(int j=0; j<links[i]->size_D_link(); ++j){
+            for(int k=0; k<links[i]->size_A_link(); ++k){
+                if(graph_nodes.find(mapping[links[i]->at_D_link(j)]) != graph_nodes.end() &&
+                   graph_nodes.find(mapping[links[i]->at_A_link(k)]) != graph_nodes.end()){
+                    if(graph_nodes[mapping[links[i]->at_D_link(j)]] != graph_nodes[mapping[links[i]->at_A_link(k)]]){
+                        sign_file << "\t edge: {\n";
+                        sign_file << "\t\t source: \"" << graph_nodes[mapping[links[i]->at_D_link(j)]] << "\"\n";
+                        sign_file << "\t\t target: \"" << graph_nodes[mapping[links[i]->at_A_link(k)]] << "\"\n";
+                        sign_file << "\t\t label: \"" << links[i]->get_frequency() << "\"\n";
+                        sign_file << "\t}\n";
+                    }
+                }
+            }
+        }
+    }
+    sign_file << "}";
+#endif
+
     //Graphml export
     ::boost::dynamic_properties dp;
     ::boost::graph_traits<Graph>::vertex_iterator v, v_end;
@@ -159,9 +224,10 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
         put(::boost::vertex_name_t(), ug, *v, vertex_names[(*v)].length());
         put(::boost::vertex_color_t(), ug, *v, vertex_names[(*v)]);
     }
-    
+
     dp.property("length", get(::boost::vertex_name_t(), ug));
     dp.property("seq", get(::boost::vertex_color_t(), ug));
+    dp.property("weight", get(::boost::edge_weight_t(), ug));
     if(graphML_out_file == NULL){
         ::boost::write_graphml(::std::cout, ug, dp, true);
     }else{
@@ -177,6 +243,10 @@ void print_graph(::std::vector<table_entry*> links, const map<unsigned long long
     out_file.close();
     gdl_file.close();
 #endif
+
+#ifdef SIGNIFICATIVE
+    sign_file.close();
+#endif
 }//End_Method
 
 /**********************************/
@@ -189,16 +259,16 @@ int get_left_linked_read(string chain, tables& table, int delta){
     int right_cut = 0;
     //Try to join and cut the chain on the right
     while(q <= delta){
-        ::seqan::assign(r_t,::seqan::infix(chain,::seqan::length(chain)-2*delta+q,::seqan::length(chain)-delta+q));
+        seqan::assign(r_t,seqan::infix(chain,seqan::length(chain)-2*delta+q,seqan::length(chain)-delta+q));
         //std::cout << r_t << std::endl;
         hash_map::iterator l_it = table.left_map.find(fingerprint(r_t));
         if(l_it != table.left_map.end()){
             if((*l_it).second.half_spliced){
                 string head;
-                //::std::cout << delta-q << ::std::endl;
-                assign(head,::seqan::prefix(chain,delta));
-                //::std::cout << "CH R " << chain << ::std::endl;
-                //::std::cout << "SE L " << ::seqan::prefix((*l_it).second.p->get_short_read()->get_RNA_seq_sequence(),delta) << "  " << ::seqan::suffix((*l_it).second.p->get_short_read()->get_RNA_seq_sequence(),delta) << ::std::endl;
+                //std::cout << delta-q << std::endl;
+                assign(head,seqan::prefix(chain,delta));
+                //std::cout << "CH R " << chain << std::endl;
+                //std::cout << "SE L " << seqan::prefix((*l_it).second.p->get_short_read()->get_RNA_seq_sequence(),delta) << "  " << seqan::suffix((*l_it).second.p->get_short_read()->get_RNA_seq_sequence(),delta) << std::endl;
                 table_entry* t = (*l_it).second.p;
                 while(t != NULL){
                     t->push_D_link(fingerprint(head));
@@ -215,10 +285,10 @@ int get_left_linked_read(string chain, tables& table, int delta){
                     hash_map::iterator r_it = table.right_map.find(t->get_right_fingerprint());
                     if((*r_it).second.half_spliced){
                         string head;
-                        //::std::cout << delta-q << ::std::endl;
-                        //::std::cout << "CH R " << chain << ::std::endl;
-                        //::std::cout << "SE R " << ::seqan::prefix((*r_it).second.p->get_short_read()->get_RNA_seq_sequence(),delta) << "  " << ::seqan::suffix((*r_it).second.p->get_short_read()->get_RNA_seq_sequence(),delta) << ::std::endl;
-                        assign(head,::seqan::prefix(chain,delta));
+                        //std::cout << delta-q << std::endl;
+                        //std::cout << "CH R " << chain << std::endl;
+                        //std::cout << "SE R " << seqan::prefix((*r_it).second.p->get_short_read()->get_RNA_seq_sequence(),delta) << "  " << seqan::suffix((*r_it).second.p->get_short_read()->get_RNA_seq_sequence(),delta) << std::endl;
+                        assign(head,seqan::prefix(chain,delta));
                         //::std::cout << r_t << ::std::endl;
                         table_entry* right_t = (*r_it).second.p;
                         while(right_t != NULL){
@@ -252,16 +322,16 @@ int get_right_linked_read(string chain, tables& table, int delta){
     int left_cut = 0;
     //Try to join and cut the chain on the left
     while(q >= 0){
-        ::seqan::assign(l_t,::seqan::infix(chain,q,delta+q));
-        //::std::cout << r_t << ::std::endl;
+        seqan::assign(l_t,seqan::infix(chain,q,delta+q));
+        //std::cout << r_t << std::endl;
         hash_map::iterator r_it = table.right_map.find(fingerprint(l_t));
         if(r_it != table.right_map.end()){
             if((*r_it).second.half_spliced){
                 string head;
-                //::std::cout << q << ::std::endl;
-                //::std::cout << "CH L " << chain << ::std::endl;
-                //::std::cout << "R " << ::seqan::prefix((*r_it).second.p->get_short_read()->get_RNA_seq_sequence(),delta) << "  " << ::seqan::suffix((*r_it).second.p->get_short_read()->get_RNA_seq_sequence(),delta) << ::std::endl;
-                assign(head,::seqan::prefix(chain,delta));
+                //std::cout << q << std::endl;
+                //std::cout << "CH L " << chain << std::endl;
+                //std::cout << "R " << seqan::prefix((*r_it).second.p->get_short_read()->get_RNA_seq_sequence(),delta) << "  " << seqan::suffix((*r_it).second.p->get_short_read()->get_RNA_seq_sequence(),delta) << std::endl;
+                assign(head,seqan::prefix(chain,delta));
                 table_entry* t = (*r_it).second.p;
                 while(t != NULL){
                     t->push_A_link(fingerprint(head));
@@ -278,10 +348,10 @@ int get_right_linked_read(string chain, tables& table, int delta){
                     hash_map::iterator l_it = table.left_map.find(t->get_left_fingerprint());
                     if((*l_it).second.half_spliced){
                         string head;
-                        //::std::cout << q << ::std::endl;
-                        //::std::cout << "CH L " << chain << ::std::endl;
-                        //::std::cout << "L " << ::seqan::prefix((*l_it).second.p->get_short_read()->get_RNA_seq_sequence(),delta) << "  " << ::seqan::suffix((*l_it).second.p->get_short_read()->get_RNA_seq_sequence(),delta) << ::std::endl;
-                        assign(head,::seqan::prefix(chain,delta));
+                        //std::cout << q << std::endl;
+                        //std::cout << "CH L " << chain << std::endl;
+                        //std::cout << "L " << seqan::prefix((*l_it).second.p->get_short_read()->get_RNA_seq_sequence(),delta) << "  " << seqan::suffix((*l_it).second.p->get_short_read()->get_RNA_seq_sequence(),delta) << std::endl;
+                        assign(head,seqan::prefix(chain,delta));
                         table_entry* left_t = (*l_it).second.p;
                         while(left_t != NULL){
                             if(fingerprint(l_t) == left_t->get_right_fingerprint()){
@@ -290,7 +360,7 @@ int get_right_linked_read(string chain, tables& table, int delta){
                             left_t = left_t->get_l_next();
                         }
                         if(q>left_cut){
-                            //::std::cout << "QUA " << q << ::std::endl;
+                            //std::cout << "QUA " << q << std::endl;
                             left_cut = q;
                         }
                     }
@@ -428,20 +498,21 @@ std::map<unsigned long long, unsigned long long> chains_unify(map<unsigned long 
 void check_cutted_frags(CharString frag, std::vector<table_entry*> &links, 
                         map<unsigned long long, string> &chains, unsigned int min_length){
     if(length(frag) > min_length){
-	
+	//std::cerr << toCString(frag) << std::endl;
         std::queue<int> l_link;
         std::queue<int> r_link;
         Pattern<CharString, ShiftOr > pattern(frag);
         for(unsigned int i=0; i<links.size(); ++i){
-            CharString text = links[i]->get_short_read()->get_RNA_seq_sequence();
+            CharString text = links[i]->get_RNA_seq_sequence();
+            //NEW_OPT CharString text = links[i]->get_short_read()->get_RNA_seq_sequence();
             Finder<CharString> finder(text);
             find(finder,pattern);
             if(beginPosition(finder) < min_length){
-                //std::cout << "L link " << i << ::std::endl;
+                //std::cerr << "L link " << i << std::endl;
                 l_link.push(i);
             }
             if(endPosition(finder) > length(text) - min_length){
-                //std::cout << "R link" << ::std::endl;
+                //std::cerr << "R link" << std::endl;
                 r_link.push(i);
             }
         }
@@ -460,7 +531,7 @@ void check_cutted_frags(CharString frag, std::vector<table_entry*> &links,
 		//std::cerr << chains[fingerprint(head)] << std::endl;
 		//std::cerr << toCString(frag) << std::endl;
 	    }            
-            //::std::cout << toCString(frag) << ::std::endl;
+            //std::cerr << toCString(frag) << std::endl;
             while(!l_link.empty()){
                 links[l_link.front()]->push_D_link(fingerprint(head));
                 l_link.pop();
@@ -473,10 +544,269 @@ void check_cutted_frags(CharString frag, std::vector<table_entry*> &links,
     }
 }
 
-void link_fragment_chains(tables& table, map<unsigned long long, string> & chains, int ref_level, char* out_file){
-    ::std::vector<table_entry*> linking_reads;
+/*************************************/
+/* Confirm Perfectly Spliced reads   */
+/* by looking for spliced reads that */
+/* are the same link. This increase  */
+/* the weight of the link.           */
+/*************************************/
+void confirm_links(tables& table){
     hash_map::iterator seq_it;
-    int len = length(table.left_map.begin()->second.p->get_short_read()->get_RNA_seq_sequence());
+    int len = length(table.left_map.begin()->second.p->get_RNA_seq_sequence());
+    //NEW_OPT int len = length(table.left_map.begin()->second.p->get_short_read()->get_RNA_seq_sequence());
+    //Left spliced
+    for(seq_it = table.left_map.begin(); seq_it != table.left_map.end(); ++seq_it){
+        if(!(seq_it->second.unspliced) && !(seq_it->second.half_spliced)){
+            table_entry *t = seq_it->second.p;
+            while(t != NULL){
+                //std::cerr << t->get_short_read()->get_RNA_seq_sequence() << std::endl;
+                String<Dna5> s = t->get_RNA_seq_sequence();
+                //NEW_OPT String<Dna5> s = t->get_short_read()->get_RNA_seq_sequence();
+                for(int i=1; i<=len/4; ++i){
+                    string left_part;
+                    String<Dna5> end_part = seqan::suffix(s,i+(len/2));
+                    seqan::assign(left_part,seqan::infix(s,i,i+(len/2)));
+                    //std::cerr << left_part << " " << end_part << std::endl;
+                    if(table.left_map.find(fingerprint(left_part)) != table.left_map.end()){
+                        //table_entry* t_hs = table.left_map[fingerprint(left_part)].p;
+
+                        if(table.left_map[fingerprint(left_part)].half_spliced){
+                            table_entry* t_hs = table.left_map[fingerprint(left_part)].p;
+                            while(t_hs != NULL){
+                                String<Dna5> t_hs_seq = t_hs->get_RNA_seq_sequence();
+                                if(seqan::isEqual(end_part,
+                                   seqan::infix(t_hs_seq,len/2,(len/2)+length(end_part)))){
+                                //NEW_OPT if(seqan::isEqual(end_part,
+                                //NEW_OPT    seqan::infix(t_hs->get_short_read()->get_RNA_seq_sequence(),len/2,(len/2)+length(end_part)))){
+                                    t_hs->increase_freq(t->get_frequency());
+                                    //std::cerr << s << std::endl;
+                                    //std::cerr << t_hs->get_short_read()->get_RNA_seq_sequence() << std::endl;
+                                }
+                                t_hs = t_hs->get_l_next();
+                            }
+                        }else{
+                            table_entry* t_hs = table.left_map[fingerprint(left_part)].p;
+                            //NEW_OPT if(table.right_map[t_hs->get_right_fingerprint()].half_spliced &&
+                            //NEW_OPT   seqan::isEqual(end_part,
+                            //NEW_OPT   seqan::infix(t_hs->get_short_read()->get_RNA_seq_sequence(),len/2,(len/2)+length(end_part)))){
+                            String<Dna5> t_hs_seq = t_hs->get_RNA_seq_sequence();
+                            if(table.right_map[t_hs->get_right_fingerprint()].half_spliced &&
+                               seqan::isEqual(end_part,
+                                              seqan::infix(t_hs_seq,len/2,(len/2)+length(end_part)))){
+                                t_hs->increase_freq(t->get_frequency());
+                                //std::cerr << s << std::endl;
+                                //std::cerr << t_hs->get_short_read()->get_RNA_seq_sequence() << std::endl;
+                            }
+                        }
+                    }
+                    string right_part;
+                    String<Dna5> start_part = seqan::prefix(s,len-i-(len/2));
+                    seqan::assign(right_part,seqan::infix(s,len-i-(len/2),len-i));
+                    //std::cerr << start_part << " " << right_part << std::endl;
+                    if(table.right_map.find(fingerprint(right_part)) != table.right_map.end()){
+                        //table_entry* t_hs = table.right_map[fingerprint(right_part)].p;
+                        
+                        if(table.right_map[fingerprint(right_part)].half_spliced){
+                            table_entry* t_hs = table.right_map[fingerprint(right_part)].p;
+                            while(t_hs != NULL){
+                                String<Dna5> t_hs_seq = t_hs->get_RNA_seq_sequence();
+                                //NEW_OPT if(seqan::isEqual(start_part,
+                                //NEW_OPT    seqan::infix(t_hs->get_short_read()->get_RNA_seq_sequence(),len/2-length(start_part),len/2))){
+                                if(seqan::isEqual(start_part,
+                                          seqan::infix(t_hs_seq,len/2-length(start_part),len/2))){
+                                    t_hs->increase_freq(t->get_frequency());
+                                    //std::cerr << s << std::endl;
+                                    //std::cerr << t_hs->get_short_read()->get_RNA_seq_sequence() << std::endl;
+                                }
+                                t_hs = t_hs->get_r_next();
+                            }
+                        }else{
+                            table_entry* t_hs = table.right_map[fingerprint(right_part)].p;
+                            //NEW_OPT if(table.left_map[t_hs->get_left_fingerprint()].half_spliced &&
+                            //NEW_OPT   seqan::isEqual(start_part,
+                            //NEW_OPT   seqan::infix(t_hs->get_short_read()->get_RNA_seq_sequence(),len/2-length(start_part),len/2))){
+                            String<Dna5> t_hs_seq = t_hs->get_RNA_seq_sequence();
+                            if(table.left_map[t_hs->get_left_fingerprint()].half_spliced &&
+                               seqan::isEqual(start_part,
+                                              seqan::infix(t_hs_seq,len/2-length(start_part),len/2))){
+                                t_hs->increase_freq(t->get_frequency());
+                                //std::cerr << s << std::endl;
+                                //std::cerr << t_hs->get_short_read()->get_RNA_seq_sequence() << std::endl;
+                            }
+                        }
+                    }
+                }
+                t = t->get_l_next();
+            }
+        }
+    }
+    //Right spliced
+    for(seq_it = table.right_map.begin(); seq_it != table.right_map.end(); ++seq_it){
+        if(!(seq_it->second.unspliced) && !(seq_it->second.half_spliced)){
+            table_entry *t = seq_it->second.p;
+            while(t != NULL){
+                //std::cerr << t->get_short_read()->get_RNA_seq_sequence() << std::endl;
+                String<Dna5> s = t->get_RNA_seq_sequence();
+                //NEW_OPT String<Dna5> s = t->get_short_read()->get_RNA_seq_sequence();
+                for(int i=1; i<=len/4; ++i){
+                    string left_part;
+                    String<Dna5> end_part = seqan::suffix(s,i+(len/2));
+                    seqan::assign(left_part,seqan::infix(s,i,i+(len/2)));
+                    //std::cerr << left_part << " " << end_part << std::endl;
+                    if(table.left_map.find(fingerprint(left_part)) != table.left_map.end()){
+                        //table_entry* t_hs = table.left_map[fingerprint(left_part)].p;
+                        
+                        if(table.left_map[fingerprint(left_part)].half_spliced){
+                            table_entry* t_hs = table.left_map[fingerprint(left_part)].p;
+                            while(t_hs != NULL){
+                                String<Dna5> t_hs_seq = t_hs->get_RNA_seq_sequence();
+                                //NEW_OPT if(seqan::isEqual(end_part,
+                                //NEW_OPT    seqan::infix(t_hs->get_short_read()->get_RNA_seq_sequence(),len/2,(len/2)+length(end_part)))){
+                                if(seqan::isEqual(end_part,
+                                          seqan::infix(t_hs_seq,len/2,(len/2)+length(end_part)))){
+                                    t_hs->increase_freq(t->get_frequency());
+                                    //std::cerr << s << std::endl;
+                                    //std::cerr << t_hs->get_short_read()->get_RNA_seq_sequence() << std::endl;
+                                }
+                                t_hs = t_hs->get_l_next();
+                            }
+                        }else{
+                            table_entry* t_hs = table.left_map[fingerprint(left_part)].p;
+                            //NEW_OPT if(table.right_map[t_hs->get_right_fingerprint()].half_spliced &&
+                            //NEW_OPT    seqan::isEqual(end_part,
+                            //NEW_OPT    seqan::infix(t_hs->get_short_read()->get_RNA_seq_sequence(),len/2,(len/2)+length(end_part)))){
+                            String<Dna5> t_hs_seq = t_hs->get_RNA_seq_sequence();
+                            if(table.right_map[t_hs->get_right_fingerprint()].half_spliced &&
+                               seqan::isEqual(end_part,
+                                              seqan::infix(t_hs_seq,len/2,(len/2)+length(end_part)))){
+                                t_hs->increase_freq(t->get_frequency());
+                                //std::cerr << s << std::endl;
+                                //std::cerr << t_hs->get_short_read()->get_RNA_seq_sequence() << std::endl;
+                            }
+                        }
+                    }
+                    string right_part;
+                    String<Dna5> start_part = seqan::prefix(s,len-i-(len/2));
+                    seqan::assign(right_part,seqan::infix(s,len-i-(len/2),len-i));
+                    //std::cerr << start_part << " " << right_part << std::endl;
+                    if(table.right_map.find(fingerprint(right_part)) != table.right_map.end()){
+                        //table_entry* t_hs = table.right_map[fingerprint(right_part)].p;
+                        
+                        if(table.right_map[fingerprint(right_part)].half_spliced){
+                            table_entry* t_hs = table.right_map[fingerprint(right_part)].p;
+                            while(t_hs != NULL){
+                                String<Dna5> t_hs_seq = t_hs->get_RNA_seq_sequence();
+                                //NEW_OPT if(seqan::isEqual(start_part,
+                                //NEW_OPT    seqan::infix(t_hs->get_short_read()->get_RNA_seq_sequence(),len/2-length(start_part),len/2))){
+                                if(seqan::isEqual(start_part,
+                                          seqan::infix(t_hs_seq,len/2-length(start_part),len/2))){
+                                    t_hs->increase_freq(t->get_frequency());
+                                    //std::cerr << s << std::endl;
+                                    //std::cerr << t_hs->get_short_read()->get_RNA_seq_sequence() << std::endl;
+                                }
+                                t_hs = t_hs->get_r_next();
+                            }
+                        }else{
+                            table_entry* t_hs = table.right_map[fingerprint(right_part)].p;
+                            //NEW_OPT if(table.left_map[t_hs->get_left_fingerprint()].half_spliced &&
+                            //NEW_OPT   seqan::isEqual(start_part,
+                            //NEW_OPT   seqan::infix(t_hs->get_short_read()->get_RNA_seq_sequence(),len/2-length(start_part),len/2))){
+                            String<Dna5> t_hs_seq = t_hs->get_RNA_seq_sequence();
+                            if(table.left_map[t_hs->get_left_fingerprint()].half_spliced &&
+                               seqan::isEqual(start_part,
+                                              seqan::infix(t_hs_seq,len/2-length(start_part),len/2))){
+                                t_hs->increase_freq(t->get_frequency());
+                                //std::cerr << s << std::endl;
+                                //std::cerr << t_hs->get_short_read()->get_RNA_seq_sequence() << std::endl;
+                            }
+                        }
+                    }
+                }
+                t = t->get_r_next();
+            }
+        }
+    }
+}
+
+/*******************************/
+/* Adds links between existing */
+/* nodes with possible gaps    */
+/*******************************/
+void gap_linking(std::vector<table_entry*> & links, const map<unsigned long long, string> chains, unsigned int gap_len){
+    map<unsigned long long, string>::const_iterator ch_iter;
+    map<unsigned long long, int> graph_nodes;
+    long pending_links = 0;
+    long added_links = 0;
+    for(unsigned int i=0; i<links.size(); ++i){
+        if(links[i]->size_D_link() != 0 && links[i]->size_A_link() == 0){
+            pending_links++;
+            for(unsigned int q=1; q<=gap_len; ++q){
+                bool found = false;
+                string read_tail;
+                assign(read_tail,seqan::suffix(links[i]->get_RNA_seq_sequence(),READ_LEN/2+q));
+                //NEW_OPT assign(read_tail,seqan::suffix(links[i]->get_short_read()->get_RNA_seq_sequence(),READ_LEN/2+q));
+                for(ch_iter = chains.begin(); ch_iter != chains.end(); ++ch_iter){
+                    if(ch_iter->second.length() > length(read_tail)){
+                        string chain_head;
+                        assign(chain_head,seqan::prefix(ch_iter->second,READ_LEN/2-q));
+                        if(read_tail == chain_head){
+                            added_links++;
+                            links[i]->push_A_link(ch_iter->first);
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                if(found){
+                    break;
+                }
+            }
+        }
+        if(links[i]->size_A_link() != 0 && links[i]->size_D_link() == 0){
+            pending_links++;
+            for(unsigned int q=1; q<=gap_len; ++q){
+                bool found = false;
+                string read_head;
+                assign(read_head,seqan::prefix(links[i]->get_RNA_seq_sequence(),READ_LEN/2-q));
+                //NEW_OPT assign(read_head,seqan::prefix(links[i]->get_short_read()->get_RNA_seq_sequence(),READ_LEN/2-q));
+                for(ch_iter = chains.begin(); ch_iter != chains.end(); ++ch_iter){
+                    if(ch_iter->second.length() > length(read_head)){
+                        string chain_tail;
+                        assign(chain_tail,seqan::suffix(ch_iter->second,ch_iter->second.length()-READ_LEN/2+q));
+                        if(read_head == chain_tail){
+                            added_links++;
+                            links[i]->push_D_link(ch_iter->first);
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                if(found){
+                    break;
+                }
+            }
+        }
+    }
+    std::cerr << std::endl;
+    std::cerr << "Number of pending links: " << pending_links << std::endl;
+    std::cerr << "Number of links with gaps added: " << added_links << std::endl;
+}
+
+void link_fragment_chains(tables& table, map<unsigned long long, string> & chains, int ref_level, char* out_file){
+    std::vector<table_entry*> linking_reads;
+    if(table.left_map.empty() || table.right_map.empty()){
+	std::cerr << "No Links" << std::endl;
+	std::map<unsigned long long, unsigned long long> mapping;
+    	std::map<unsigned long long, string>::iterator ch_it;
+    	for(ch_it = chains.begin(); ch_it != chains.end(); ++ch_it){
+		mapping[ch_it->first] = ch_it->first;
+    	}
+	print_graph(linking_reads,chains, mapping, out_file);
+	return;
+    }
+    hash_map::iterator seq_it;
+    //int len = length(table.left_map.begin()->second.p->get_short_read()->get_RNA_seq_sequence());
+    //NEW_OPT int len = length(table.left_map.begin()->second.p->get_RNA_seq_sequence());
     //Look for half spliced RNA-seqs
     for(seq_it=table.left_map.begin(); seq_it != table.left_map.end(); seq_it++){
         if(!(*seq_it).second.unspliced){
@@ -484,9 +814,10 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
             int sum = 0;
             table_entry* t = (*seq_it).second.p;
             while(sum <= 1 && t != NULL){
-                string str;
-                assign(str,t->get_short_read()->get_RNA_seq_sequence());
-                if(str[len/2] == 'A' || str[len/2] == 'a'){
+                string str = t->get_RNA_seq_sequence();
+                //NEW_OPT string str;
+                //NEW_OPT assign(str,t->get_short_read()->get_RNA_seq_sequence());
+                if(str[READ_LEN/2] == 'A' || str[READ_LEN/2] == 'a'){
                     if(a[0] == 0){
                         a[0] = 1;
                         ++sum;
@@ -494,7 +825,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
                         //dupl = 1;
                     }//End_If
                 }//End_If
-                if(str[len/2] == 'C' || str[len/2] == 'c'){
+                if(str[READ_LEN/2] == 'C' || str[READ_LEN/2] == 'c'){
                     if(a[1] == 0){
                         a[1] = 1;
                         ++sum;
@@ -502,7 +833,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
                         //dupl = 1;
                     }//End_If
                 }//End_If
-                if(str[len/2] == 'G' || str[len/2] == 'g'){
+                if(str[READ_LEN/2] == 'G' || str[READ_LEN/2] == 'g'){
                     if(a[2] == 0){
                         a[2] = 1;
                         ++sum;
@@ -510,7 +841,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
                         //dupl = 1;
                     }//End_If
                 }//End_If
-                if(str[len/2] == 'T' || str[len/2] == 't'){
+                if(str[READ_LEN/2] == 'T' || str[READ_LEN/2] == 't'){
                     if(a[3] == 0){
                         a[3] = 1;
                         ++sum;
@@ -525,7 +856,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
                 table_entry* t = (*seq_it).second.p;
                 while(t != NULL){
                     linking_reads.push_back(t);
-                    //::std::cout << t->get_short_read()->get_RNA_seq_sequence() << ::std::endl;
+                    //std::cout << t->get_short_read()->get_RNA_seq_sequence() << std::endl;
                     t = t->get_l_next();
                 }
             }//End_If
@@ -537,9 +868,10 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
             int sum = 0;
             table_entry* t = (*seq_it).second.p;
             while(sum <= 1 && t != NULL){
-                string str;
-                assign(str,t->get_short_read()->get_RNA_seq_sequence());
-                if(str[len/2 - 1] == 'A' || str[len/2 - 1] == 'a'){
+                string str = t->get_RNA_seq_sequence();
+                //NEW_OPT string str;
+                //NEW_OPT assign(str,t->get_short_read()->get_RNA_seq_sequence());
+                if(str[READ_LEN/2 - 1] == 'A' || str[READ_LEN/2 - 1] == 'a'){
                     if(a[0] == 0){
                         a[0] = 1;
                         ++sum;
@@ -547,7 +879,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
                         //dupl = 1;
                     }//End_If
                 }//End_If
-                if(str[len/2 - 1] == 'C' || str[len/2 - 1] == 'c'){
+                if(str[READ_LEN/2 - 1] == 'C' || str[READ_LEN/2 - 1] == 'c'){
                     if(a[1] == 0){
                         a[1] = 1;
                         ++sum;
@@ -555,7 +887,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
                         //dupl = 1;
                     }//End_If
                 }//End_If
-                if(str[len/2 - 1] == 'G' || str[len/2 - 1] == 'g'){
+                if(str[READ_LEN/2 - 1] == 'G' || str[READ_LEN/2 - 1] == 'g'){
                     if(a[2] == 0){
                         a[2] = 1;
                         ++sum;
@@ -563,7 +895,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
                         //dupl = 1;
                     }//End_If
                 }//End_If
-                if(str[len/2 - 1] == 'T' || str[len/2 - 1] == 't'){
+                if(str[READ_LEN/2 - 1] == 'T' || str[READ_LEN/2 - 1] == 't'){
                     if(a[3] == 0){
                         a[3] = 1;
                         ++sum;
@@ -578,20 +910,24 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
                 table_entry* t = (*seq_it).second.p;
                 while(t != NULL){
                     linking_reads.push_back(t);
-                    //::std::cout << t->get_short_read()->get_RNA_seq_sequence() << ::std::endl;
+                    //std::cout << t->get_short_read()->get_RNA_seq_sequence() << std::endl;
                     t = t->get_r_next();
                 }
             }//End_If
         }//End_If
     }//End_For
     //std::cerr << "Size: " << chains.size() << std::endl;
+
+    //Confirm Perfectly Spliced reads
+    confirm_links(table);
+
     //Look for linking RNA-seqs
     map<unsigned long long, string>::iterator chain_it;
     //Come prova impostiamo delta a 1/2 della lunghezza dei read
-    unsigned int delta = len/2;
+    unsigned int delta = READ_LEN/2;
     string new_chain;
     //int c = 0;
-    ::std::cerr << "Linking Chains...";
+    std::cerr << "Linking Chains...";
     clock_t tStart = clock();
     for(chain_it = chains.begin(); chain_it != chains.end(); ++chain_it){
 	if(chain_it->second.length() < delta){
@@ -604,12 +940,12 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
         int left_cut = get_right_linked_read(chain_it->second, table, delta);
         //std::cerr << left_cut << " " << right_cut << ::std::endl;
 	//std::cerr << chain_it->second << ::std::endl;
-        assign(new_chain,::seqan::infix(chain_it->second,left_cut,chain_it->second.length()-right_cut));
+        assign(new_chain,seqan::infix(chain_it->second,left_cut,chain_it->second.length()-right_cut));
         
         //std::cerr << new_chain << ::std::endl << ::std::endl;
 
-        check_cutted_frags(::seqan::prefix(chain_it->second,left_cut),linking_reads,chains,delta/2);
-        check_cutted_frags(::seqan::suffix(chain_it->second,chain_it->second.length()-right_cut),linking_reads,chains,delta/2);
+        check_cutted_frags(seqan::prefix(chain_it->second,left_cut),linking_reads,chains,delta/2);
+        check_cutted_frags(seqan::suffix(chain_it->second,chain_it->second.length()-right_cut),linking_reads,chains,delta/2);
         //::std::cout << "Pre " << ::seqan::prefix(chain_it->second,left_cut) << ::std::endl;
         //::std::cout << "Suf " << ::seqan::suffix(chain_it->second,chain_it->second.length()-right_cut) << ::std::endl;
 	//if(new_chain.length() < delta){
@@ -619,11 +955,18 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
         chain_it->second = new_chain;	
         //::std::cout << "Fine catena" << ::std::endl;
     }//End_For
-    std::cerr << "done!" << ::std::endl;
+    std::cerr << "done!" << std::endl;
     std::cerr << "Linking graph nodes took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
     std::cerr << " seconds." << std::endl << std::endl;
-    //print_merged_chains(chains);
-  #define MERGING
+    //Look for links with gaps
+    /*
+    std::cerr << "Adding links with gaps...";
+    tStart = clock();
+    gap_linking(linking_reads,chains,GAP_LENGTH);
+    std::cerr << "done!" << std::endl;
+    std::cerr << "Adding links with gaps took " << (double)(clock() - tStart)/CLOCKS_PER_SEC;
+    std::cerr << " seconds." << std::endl << std::endl;*/
+    //#define MERGING
   #ifdef MERGING
     std::cerr << "Merging " << chains.size() << " Graph Nodes...";
     tStart = clock();
@@ -647,14 +990,14 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
     case 2:
         std::cerr << "Graph Refinement..." << std::endl;
         std::cerr << "Step 1...";
-        tiny_blocks(linking_reads,chains,delta,mapping);
+        tiny_blocks(linking_reads,chains,delta,mapping,MIN_LEN_TINY);
         std::cerr << "done!" << std::endl;
         std::cerr << "Graph Refinement...done!" << std::endl;
         break;
     case 3:
         std::cerr << "Graph Refinement..." << std::endl;
         std::cerr << "Step 1...";
-        tiny_blocks(linking_reads,chains,delta,mapping);
+        tiny_blocks(linking_reads,chains,delta,mapping,MIN_LEN_TINY);
         std::cerr << "done!" << std::endl;
         std::cerr << "Step 2...";
         add_linking_reads(linking_reads,chains,delta/2);
@@ -664,7 +1007,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
     case 4:
         std::cerr << "Graph Refinement..." << std::endl;
         std::cerr << "Step 1...";
-        tiny_blocks(linking_reads,chains,delta,mapping);
+        tiny_blocks(linking_reads,chains,delta,mapping,MIN_LEN_TINY);
         std::cerr << "done!" << std::endl;
         std::cerr << "Step 2...";
         add_linking_reads(linking_reads,chains,delta/2);
@@ -677,7 +1020,7 @@ void link_fragment_chains(tables& table, map<unsigned long long, string> & chain
     case 5:
         std::cerr << "Graph Refinement..." << std::endl;
         std::cerr << "Step 1...";
-        tiny_blocks(linking_reads,chains,delta,mapping);
+        tiny_blocks(linking_reads,chains,delta,mapping,MIN_LEN_TINY);
         std::cerr << "done!" << std::endl;
         std::cerr << "Step 2...";
         add_linking_reads(linking_reads,chains,delta/2);

@@ -26,9 +26,74 @@
 /* Class that models the entry */
 /* of the hash table           */
 /*******************************/
+#include "configuration.h"
 #include "table_entry.h"
 
+
+/************************************************/
+/* Convert a DNA sequnece on alphabet {A,C,G,T} */
+/* into a number                                */
+/************************************************/
+unsigned long long fingerprint(const string& seq){
+    unsigned long long number = 0;
+    for(unsigned int i=0; i<seq.length(); i++){
+        number = number<<2;
+        if(seq.at(i) == 'N' || seq.at(i) == 'n'){
+            number |= 0;
+        }
+        if(seq.at(i) == 'A' || seq.at(i) == 'a'){
+            number |= 0;
+        }
+        if(seq.at(i) == 'C' || seq.at(i) == 'c'){
+            number |= 1;
+        }
+        if(seq.at(i) == 'G' || seq.at(i) == 'g'){
+            number |= 2;
+        }
+        if(seq.at(i) == 'T' || seq.at(i) == 't'){
+            number |= 3;
+        }
+    }//End_For
+    return number;
+}//End_Method
+
+
 //Constructors
+#if defined(LOW_MEM_USG)
+table_entry::table_entry(unsigned long long left_f, unsigned long long right_f){
+
+    this->l_next = NULL;
+    this->l_prev = NULL;
+    this->r_next = NULL;
+    this->r_prev = NULL;
+    
+    this->left_fingerprint = left_f;
+    this->right_fingerprint = right_f;
+    this->chain_next = NULL;
+    this->chain_prev = NULL;
+    this->frequency = 1;
+}
+#endif
+
+#if !defined(LOW_MEM_USG)
+table_entry::table_entry(String<Dna5>seq, unsigned long long left_f, unsigned long long right_f){
+    seqan::assign(short_read,seq);
+    this->l_next = NULL;
+    this->l_prev = NULL;
+    this->r_next = NULL;
+    this->r_prev = NULL;
+
+    this->left_fingerprint = left_f;
+    this->right_fingerprint = right_f;
+    //this->junction_offset = 0;
+    this->chain_next = NULL;
+    this->chain_prev = NULL;
+    this->frequency = 1;
+}
+#endif
+
+
+/* NEW_OPT 
 table_entry::table_entry(String<Dna5> seq,
                          unsigned long long left_f, unsigned long long right_f){
     short_read = new RNA_seq(seq);
@@ -45,6 +110,7 @@ table_entry::table_entry(String<Dna5> seq,
     this->chain_prev = NULL;
     this->frequency = 1;
 }
+*/
 /*
 table_entry::table_entry(String<Dna5> seq, string source, string gene_id, 
                          unsigned long long left_f, unsigned long long right_f){
@@ -101,9 +167,11 @@ table_entry::table_entry(String<Dna5> seq, string source, string gene_id,
 
 //Distructor
 table_entry::~table_entry(){
+    /* NEW_OPT
     if (short_read != NULL){
         delete short_read;
     }
+    */
     //if(next != NULL){
     //    delete next;
     //}
@@ -113,7 +181,7 @@ table_entry::~table_entry(){
 //in which the pointers next and prev are
 //setted at NULL
 table_entry::table_entry(const table_entry& rhs){
-    short_read = new RNA_seq(*(rhs.short_read));
+    //NEW_OPT short_read = new RNA_seq(*(rhs.short_read));
 
     l_next = rhs.l_next;
     l_prev = rhs.l_prev;
@@ -132,10 +200,12 @@ table_entry::table_entry(const table_entry& rhs){
 table_entry& table_entry::operator=(const table_entry& rhs){
     if(&rhs == this)
         return *this;
+    /* NEW_OPT
     if (short_read != NULL){
         delete short_read;
     }
-    short_read = new RNA_seq(*(rhs.short_read));
+    */
+    //NEW_OPT short_read = new RNA_seq(*(rhs.short_read));
 
     l_next = rhs.l_next;
     l_prev = rhs.l_prev;
@@ -187,12 +257,13 @@ void table_entry::set_chain_next(table_entry* chain_next){
 void table_entry::set_chain_prev(table_entry* chain_prev){
     this->chain_prev = chain_prev;
 }
-
 //Get Methods
+
+/* NEW_OPT
 RNA_seq* table_entry::get_short_read() const{
     return short_read;
 }
-
+*/
 table_entry* table_entry::get_l_next() const{
     return l_next;
 }
@@ -239,8 +310,16 @@ void table_entry::increase_freq(){
     this->frequency++;
 }
 
+void table_entry::increase_freq(long val){
+    this->frequency += val;
+}
+
 void table_entry::decrease_freq(){
     this->frequency--;
+}
+
+void table_entry::decrease_freq(long val){
+    this->frequency -= val;
 }
 
 //Linking Chains Methods

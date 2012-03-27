@@ -29,11 +29,24 @@
 #ifndef TABLE_ENTRY_H
 #define TABLE_ENTRY_H
 
-#include "RNA_seq.h"
+#include <string>
+#include <seqan/sequence.h>
+#include <seqan/file.h>
+
+#include "configuration.h"
+//#include "utils.cpp"
+
+using namespace seqan;
+using namespace std;
+
+//NEW_OPT #include "RNA_seq.h"
 
 class table_entry{
     private:
-    RNA_seq* short_read;
+#if !defined(LOW_MEM_USG)
+    string short_read;
+#endif
+    // NEW_OPT RNA_seq* short_read;
     //Table List
     table_entry* r_next;
     table_entry* r_prev;
@@ -52,10 +65,16 @@ class table_entry{
 
     public:
     //Chains Linked
-    vector<unsigned long long> D_delta;
-    vector<unsigned long long> A_delta;
+    std::vector<unsigned long long> D_delta;
+    std::vector<unsigned long long> A_delta;
     //Constructors
+#if defined(LOW_MEM_USG)
+    table_entry(unsigned long long, unsigned long long);
+#endif
+
+#if !defined(LOW_MEM_USG)
     table_entry(String<Dna5>, unsigned long long, unsigned long long);
+#endif
     //table_entry(String<Dna5>, string, string, unsigned long long, unsigned long long);
     //table_entry(String<Dna5>, string, string, int, unsigned long long, unsigned long long);
     //table_entry(String<Dna5>, string, string, int, int, long, int, unsigned long long, unsigned long long);
@@ -77,7 +96,37 @@ class table_entry{
     void set_chain_prev(table_entry*);
 
     //Get Methods
-    RNA_seq* get_short_read() const;
+#if defined(LOW_MEM_USG)
+    string get_RNA_seq_sequence() const{
+	static const char* alph= "ACGT";
+	unsigned long long f1=left_fingerprint;
+	unsigned long long f2=right_fingerprint;
+	string seq(READ_LEN,' ');
+	int n_shift = 0;
+	
+	while(n_shift < READ_LEN/2){
+        	unsigned int n = f2&3;
+		n_shift++;
+        	seq[READ_LEN-n_shift]=alph[n];
+        	f2 = f2>>2;        	
+    	}
+    	while(n_shift < READ_LEN){
+        	unsigned int n = f1&3;
+		n_shift++;
+        	seq[READ_LEN-n_shift]=alph[n];
+        	f1 = f1>>2;        	
+    	}
+    	return seq;
+    }
+#endif
+
+#if !defined(LOW_MEM_USG)
+    string get_RNA_seq_sequence() const{
+	return short_read;
+    }
+#endif
+
+    //NEW_OPT RNA_seq* get_short_read() const;
     table_entry* get_l_next() const;
     table_entry* get_l_prev() const;
     table_entry* get_r_next() const;
@@ -91,7 +140,9 @@ class table_entry{
 
     //Increase / Decrease Sequence Frequency
     void increase_freq();
+    void increase_freq(long);
     void decrease_freq();
+    void decrease_freq(long);
 
     //Linking chains methods
     void push_A_link(unsigned long long);

@@ -33,39 +33,11 @@
 #include <seqan/sequence.h>
 #include <seqan/file.h>
 
+#include "configuration.h"
 #include "read_fasta.h"
-
-#define READ_LEN 64
 
 using namespace seqan;
 using namespace std;
-
-/************************************************/
-/* Convert a DNA sequnece on alphabet {A,C,G,T} */
-/* into a binary sequence                       */
-/************************************************/
-unsigned long long fingerprint(const string& seq){
-    unsigned long long number = 0;
-    for(unsigned int i=0; i<seq.length(); i++){
-        number = number<<2;
-        if(seq.at(i) == 'N' || seq.at(i) == 'n'){
-            number |= 0;
-        }
-        if(seq.at(i) == 'A' || seq.at(i) == 'a'){
-            number |= 0;
-        }
-        if(seq.at(i) == 'C' || seq.at(i) == 'c'){
-            number |= 1;
-        }
-        if(seq.at(i) == 'G' || seq.at(i) == 'g'){
-            number |= 2;
-        }
-        if(seq.at(i) == 'T' || seq.at(i) == 't'){
-            number |= 3;
-        }
-    }//End_For
-    return number;
-}//End_Method
 
 /***********************************/
 /* Parse Fasta Information:        */
@@ -80,7 +52,13 @@ table_entry* build_entry(String<Dna5> seq){
     assign(left_seq,prefix(seq,length(seq)/2));
     string right_seq;
     assign(right_seq,suffix(seq,length(seq)/2));
+#if defined(LOW_MEM_USG)
+    el = new table_entry(fingerprint(left_seq),fingerprint(right_seq));
+#endif
+
+#if !defined(LOW_MEM_USG)
     el = new table_entry(seq,fingerprint(left_seq),fingerprint(right_seq));
+#endif
     return el;
 }
 /*
@@ -220,13 +198,15 @@ void pruning(tables &table, int max_mismatch, int diff_threshold){
             s.insert(t);
             t = t->get_l_next();	
             while(t != NULL){
-                String<Dna5> seq = t->get_short_read()->get_RNA_seq_sequence();
+                String<Dna5> seq = t->get_RNA_seq_sequence();
+                //NEW_OPT String<Dna5> seq = t->get_short_read()->get_RNA_seq_sequence();
 		std::set< table_entry* >::iterator spliced_it;
 		bool new_s = true;
 		for ( spliced_it=s.begin() ; spliced_it != s.end();){
 			int diff = 0;
 			for(unsigned int l=0; l<length(seq); ++l){
-				if((*spliced_it)->get_short_read()->get_RNA_seq_sequence()[l] != seq[l]) diff++;
+				if((*spliced_it)->get_RNA_seq_sequence()[l] != seq[l]) diff++;
+                                //NEW_OPT if((*spliced_it)->get_short_read()->get_RNA_seq_sequence()[l] != seq[l]) diff++;
 			}
 			if(diff <= max_mismatch){
 				if((*spliced_it)->get_frequency() < t->get_frequency() && 
@@ -278,13 +258,15 @@ void pruning(tables &table, int max_mismatch, int diff_threshold){
             s.insert(t);
             t = t->get_r_next();	
             while(t != NULL){
-                String<Dna5> seq = t->get_short_read()->get_RNA_seq_sequence();
+                String<Dna5> seq = t->get_RNA_seq_sequence();
+                //NEW_OPT String<Dna5> seq = t->get_short_read()->get_RNA_seq_sequence();
 		std::set< table_entry* >::iterator spliced_it;
 		bool new_s = true;
 		for ( spliced_it=s.begin() ; spliced_it != s.end();){
 			int diff = 0;
 			for(unsigned int l=0; l<length(seq); ++l){
-				if((*spliced_it)->get_short_read()->get_RNA_seq_sequence()[l] != seq[l]) diff++;
+				if((*spliced_it)->get_RNA_seq_sequence()[l] != seq[l]) diff++;
+                                //NEW_OPT if((*spliced_it)->get_short_read()->get_RNA_seq_sequence()[l] != seq[l]) diff++;
 			}
 			if(diff <= max_mismatch){
 				if((*spliced_it)->get_frequency() < t->get_frequency() && 
@@ -359,8 +341,11 @@ int read_fasta(char* file_name, tables &t){
         ::std::fstream fstrm;
         fstrm.open(file_name, ::std::ios_base::in | ::std::ios_base::binary);
         if(fstrm.is_open()){
+#if defined(LOW_MEM_USG)
+	    std::cerr << "Memory optimized process stared" << std::endl;
+#endif
 	    clock_t tStart = clock();
-            ::std::cerr << "Processing RNA-seq file..." << ::std::endl;
+            std::cerr << "Processing RNA-seq file..." << std::endl;
             String<char> fasta_tag;
             String<Dna5> fasta_seq;
             int c = 0;
@@ -378,20 +363,27 @@ int read_fasta(char* file_name, tables &t){
                 }
                 //Parse RNA-seq Sequence
                 if(length(fasta_seq) >= READ_LEN){
+#if defined(ONE_READ)
+			//Only the first substring of legnth READ_LEN
+			table_entry* tab = build_entry(infix(fasta_seq,0,READ_LEN));
+                    	add_entry(t, tab);
+			c++;
+#elif defined(TWO_READS)
+			//Only the first and the last substrings of length READ_LEN
+		    	table_entry* tab = build_entry(infix(fasta_seq,0,READ_LEN));
+                    	add_entry(t, tab);
+		    	tab = build_entry(infix(fasta_seq,length(fasta_seq)-READ_LEN,length(fasta_seq)));
+                    	add_entry(t, tab);
+		    	c+=2;
+#else
 		    //All the substrings of length READ_LEN
-		    /*
                     for(unsigned int i = 0;i<=length(fasta_seq)-READ_LEN;i++){
                         //table_entry* tab = parse_fasta(infix(fasta_seq,i,i+READ_LEN),toCString(fasta_tag));
 			table_entry* tab = build_entry(infix(fasta_seq,i,i+READ_LEN));
                         add_entry(t, tab);
 			c++;
-                    }*/
-		    //Only the first and the last substrings of length READ_LEN
-		    table_entry* tab = build_entry(infix(fasta_seq,0,READ_LEN));
-                    add_entry(t, tab);
-		    tab = build_entry(infix(fasta_seq,length(fasta_seq)-READ_LEN,length(fasta_seq)));
-                    add_entry(t, tab);
-		    c+=2;
+                    }
+#endif		    
                 }else{
                     ::std::cerr << "Invalid fasta entry" << ::std::endl;
                 }
