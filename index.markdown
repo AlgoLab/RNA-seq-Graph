@@ -85,6 +85,11 @@ prompt:
 
     $ make
 
+There is also the possibility to compile with the `low_mem` option in order to reduce the memory consumption.
+In this way the memory occupation (i.e. the heap peak) is reduced by ~35% but the time required is increased by ~10%.
+Starting from a cleaned repository, the command is:
+
+    $ make low_mem
 
 ## Usage ##
 
