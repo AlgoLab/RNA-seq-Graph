@@ -27,9 +27,9 @@ of the variants of alternative splicing of the gene structure.
 by [Stefano Beretta](http://bimib.disco.unimib.it/index.php/Beretta_Stefano)
 
 
-Current release: **2.0.0** (November 3, 2011)
+Last release: March 27, 2012
 
-Direct download: [zip](https://github.com/AlgoLab/RNA-seq-Graph/zipball/v2.0.0) - [tar.gz](https://github.com/AlgoLab/RNA-seq-Graph/tarball/v2.0.0)
+Direct download: [zip](https://github.com/AlgoLab/RNA-seq-Graph/zipball/master) - [tar.gz](https://github.com/AlgoLab/RNA-seq-Graph/tarball/master)
 
 
 ------------------------------------------------------------------------
@@ -71,8 +71,8 @@ command:
 
     $ git clone git://github.com/AlgoLab/RNA-seq-Graph.git
 
-The source code is available directly in [zip](https://github.com/AlgoLab/RNA-seq-Graph/zipball/v2.0.0) 
-or [tar.gz](https://github.com/AlgoLab/RNA-seq-Graph/tarball/v2.0.0)
+The source code is available directly in [zip](https://github.com/AlgoLab/RNA-seq-Graph/zipball/master)
+or [tar.gz](https://github.com/AlgoLab/RNA-seq-Graph/tarball/master)
     
 Or, if you have a GitHub account, you can fork the project from the
 [repository web page](https://github.com/AlgoLab/RNA-seq-Graph).
