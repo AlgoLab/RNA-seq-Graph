@@ -40,6 +40,22 @@ using namespace seqan;
 using namespace std;
 
 //NEW_OPT #include "RNA_seq.h"
+unsigned long long fingerprint(const string&);
+/************************************************/
+/* Convert a DNA sequnece on alphabet {A,C,G,T} */
+/* into a number                                */
+/************************************************/
+inline unsigned long long fingerprint(const string& seq){
+    unsigned long long number = 0;
+    const size_t str_len= seq.length();
+    const char* const seqc= seq.data();
+    const static char map[]={0,0,1,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,3};
+    for(unsigned int i=0; i<str_len; i++){
+        number = number<<2;
+        number |= map[(size_t)seqc[i]-'A'];
+    }//End_For
+    return number;
+}//End_Method
 
 class table_entry{
     private:
@@ -68,7 +84,7 @@ class table_entry{
     std::vector<unsigned long long> D_delta;
     std::vector<unsigned long long> A_delta;
     //Constructors
-    table_entry(String<Dna5>, unsigned long long, unsigned long long);
+    table_entry(const String<Dna5>&, unsigned long long, unsigned long long);
     //table_entry(String<Dna5>, string, string, unsigned long long, unsigned long long);
     //table_entry(String<Dna5>, string, string, int, unsigned long long, unsigned long long);
     //table_entry(String<Dna5>, string, string, int, int, long, int, unsigned long long, unsigned long long);

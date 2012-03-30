@@ -29,39 +29,8 @@
 #include "configuration.h"
 #include "table_entry.h"
 
-
-/************************************************/
-/* Convert a DNA sequnece on alphabet {A,C,G,T} */
-/* into a number                                */
-/************************************************/
-unsigned long long fingerprint(const string& seq){
-    unsigned long long number = 0;
-    const size_t str_len= seq.length();
-    const char* const seqc= seq.data();
-    for(unsigned int i=0; i<str_len; i++){
-        number = number<<2;
-        if(seqc[i] == 'N' || seqc[i] == 'n'){
-            number |= 0;
-        }
-        if(seqc[i] == 'A' || seqc[i] == 'a'){
-            number |= 0;
-        }
-        if(seqc[i] == 'C' || seqc[i] == 'c'){
-            number |= 1;
-        }
-        if(seqc[i] == 'G' || seqc[i] == 'g'){
-            number |= 2;
-        }
-        if(seqc[i] == 'T' || seqc[i] == 't'){
-            number |= 3;
-        }
-    }//End_For
-    return number;
-}//End_Method
-
-
 //Constructors
-table_entry::table_entry(String<Dna5>seq, unsigned long long left_f, unsigned long long right_f){
+table_entry::table_entry(const String<Dna5>& seq, unsigned long long left_f, unsigned long long right_f){
 #if !defined(LOW_MEM_USG)
     seqan::assign(short_read,seq);
 #endif
