@@ -68,13 +68,7 @@ class table_entry{
     std::vector<unsigned long long> D_delta;
     std::vector<unsigned long long> A_delta;
     //Constructors
-#if defined(LOW_MEM_USG)
-    table_entry(unsigned long long, unsigned long long);
-#endif
-
-#if !defined(LOW_MEM_USG)
     table_entry(String<Dna5>, unsigned long long, unsigned long long);
-#endif
     //table_entry(String<Dna5>, string, string, unsigned long long, unsigned long long);
     //table_entry(String<Dna5>, string, string, int, unsigned long long, unsigned long long);
     //table_entry(String<Dna5>, string, string, int, int, long, int, unsigned long long, unsigned long long);

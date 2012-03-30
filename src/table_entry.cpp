@@ -36,21 +36,23 @@
 /************************************************/
 unsigned long long fingerprint(const string& seq){
     unsigned long long number = 0;
-    for(unsigned int i=0; i<seq.length(); i++){
+    const size_t str_len= seq.length();
+    const char* const seqc= seq.data();
+    for(unsigned int i=0; i<str_len; i++){
         number = number<<2;
-        if(seq.at(i) == 'N' || seq.at(i) == 'n'){
+        if(seqc[i] == 'N' || seqc[i] == 'n'){
             number |= 0;
         }
-        if(seq.at(i) == 'A' || seq.at(i) == 'a'){
+        if(seqc[i] == 'A' || seqc[i] == 'a'){
             number |= 0;
         }
-        if(seq.at(i) == 'C' || seq.at(i) == 'c'){
+        if(seqc[i] == 'C' || seqc[i] == 'c'){
             number |= 1;
         }
-        if(seq.at(i) == 'G' || seq.at(i) == 'g'){
+        if(seqc[i] == 'G' || seqc[i] == 'g'){
             number |= 2;
         }
-        if(seq.at(i) == 'T' || seq.at(i) == 't'){
+        if(seqc[i] == 'T' || seqc[i] == 't'){
             number |= 3;
         }
     }//End_For
@@ -59,25 +61,10 @@ unsigned long long fingerprint(const string& seq){
 
 
 //Constructors
-#if defined(LOW_MEM_USG)
-table_entry::table_entry(unsigned long long left_f, unsigned long long right_f){
-
-    this->l_next = NULL;
-    this->l_prev = NULL;
-    this->r_next = NULL;
-    this->r_prev = NULL;
-    
-    this->left_fingerprint = left_f;
-    this->right_fingerprint = right_f;
-    this->chain_next = NULL;
-    this->chain_prev = NULL;
-    this->frequency = 1;
-}
-#endif
-
-#if !defined(LOW_MEM_USG)
 table_entry::table_entry(String<Dna5>seq, unsigned long long left_f, unsigned long long right_f){
+#if !defined(LOW_MEM_USG)
     seqan::assign(short_read,seq);
+#endif
     this->l_next = NULL;
     this->l_prev = NULL;
     this->r_next = NULL;
@@ -90,7 +77,6 @@ table_entry::table_entry(String<Dna5>seq, unsigned long long left_f, unsigned lo
     this->chain_prev = NULL;
     this->frequency = 1;
 }
-#endif
 
 
 /* NEW_OPT 
