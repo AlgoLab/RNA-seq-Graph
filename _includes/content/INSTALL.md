@@ -1,45 +1,69 @@
-#  PIntron
+---
+layout: default
+title: RNA-seq Graph Builder
+nav:
+  - name: Introduction
+    link: "#introduction"
+  - name: Installation
+    link: "#download_and_installation"
+  - name: Usage
+    link: "#usage"
+  - name: File Formats
+    link: "#file_formats"
+  - name: License
+    link: "#license"
+  - name: Contacts
+    link: "#contacts"
+---
 
-A novel pipeline for gene-structure prediction based on
-spliced alignment of transcript sequences (ESTs and mRNAs) against a genomic sequence.
+  RNA-seq Graph Builder
+==========
 
 
-## Requirements
+## Download and Installation ##
 
-`PIntron` requires the following free software:
+RNA-seq-Graph-Builder is currently distributed only on source form.
+It has been developed on Ubuntu Linux machines (v. 10.04 and
+10.10) and has been tested on both 32 and 64 bit.
+The program requires the C++ library SEQAN available at <http://www.seqan.de>
+or it is possible to install the develop package seqan-dev by typing:
 
-- Python v3.0 or newer (available from `http://www.python.org/download/`)
-- Perl (tested on Perl v5.10.1 but it should work also with older
-  versions)
-- The JSON Perl module (available from CPAN). On most platforms, this
-  module can be installed by using the command `cpan JSON` with
-  administrator/superuser privileges (e.g., by using the command `sudo
-  cpan JSON` on MacOS X)
+    $ sudo apt-get install seqan-dev
+
+### Download ###
+
+RNA-seq-Graph-Builder is developed on the `AlgoLab/RNA-seq-Graph` Git repository hosted by
+GitHub.
+The repository can be explored using the GitHub web interface at
+<https://github.com/AlgoLab/RNA-seq-Graph>.
+
+It is also possible to clone the entire repository using the following
+command:
+
+    $ git clone git://github.com/AlgoLab/RNA-seq-Graph.git
+
+The source code is available directly in [zip](https://github.com/AlgoLab/RNA-seq-Graph/zipball/master)
+or [tar.gz](https://github.com/AlgoLab/RNA-seq-Graph/tarball/master)
+
+Or, if you have a GitHub account, you can fork the project from the
+[repository web page](https://github.com/AlgoLab/RNA-seq-Graph).
 
 
-## Compilation and Installation
+### Compilation ###
 
-`PIntron` is only distributed as source code and must be manually built.
+The program can be compiled by issuing the command at the command
+prompt:
 
-The build process is driven by the GNU make utility and can be performed
-by the following invocation:
+    $ make
 
-    make dist
+There is also the possibility to compile with the `low_mem` option in order to reduce the memory consumption.
+In this way the memory occupation (i.e. the heap peak) is reduced by ~35% but the time required is increased by ~10%.
+Starting from a cleaned repository, the command is:
 
-For the compilation process, you will need the standard build tools such
-as the aforementioned GNU make utility and a recent C compiler (tested on
-`gcc v4.4`).
+    $ make low_mem
 
-The command will produce a compressed archive `dist/pintron-*.tar.gz`
-that can be used for the installation or the execution.
 
-The binary package is composed by the directory `bin`, containing all the
-executables needed to run PIntron, and the directory `doc`, containing
-the documentation and a simple complete example.
-For installing PIntron, you should copy the executables of the `bin/`
-directory to a directory of the PATH or to a custom directory.
-In the second case, you should specify the custom directory during the
-PIntron invocation using the `--bin-dir` program option.
+
 
 
 

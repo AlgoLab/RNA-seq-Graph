@@ -1,13 +1,13 @@
 ---
-title: PIntron
-subtitle: Gene-structure prediction based on spliced alignments of transcript sequences.
-description: PIntron-A novel pipeline for gene-structure prediction based on spliced alignment of ESTs and mRNAs against a genomic sequence.
+title: RNA-seq Graph
+subtitle: Gene-structure prediction based on transcript sequences.
+description: RNA-seq Graph is a tool  for gene-structure prediction based on transcript sequences without a reference genome.
 
-url: http://algolab.github.com/PIntron
-root: /PIntron
+url: http://algolab.github.com/RNA-seq-Graph
+root: /RNA-seq-Graph 
 author: AlgoLab
 
-github_repository: PIntron
+github_repository: RNA-seq-Graph
 github_user: AlgoLab
 github_tags_count: 3
 
@@ -19,7 +19,7 @@ nav:
   - name: Usage
     link: "usage.html"
   - name: Issues
-    link: "https://github.com/AlgoLab/PIntron/issues"
+    link: "https://github.com/AlgoLab/RNA-seq-Graph/issues"
 
 simple_search: http://google.com/search
 google_analytics_tracking_id: UA-32216930-1
