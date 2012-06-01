@@ -24,7 +24,7 @@ data, without the genome information, where such a graph is a representation
 of the variants of alternative splicing of the gene structure.
 
 
-by [Stefano Beretta](http://bimib.disco.unimib.it/index.php/Beretta_Stefano)
+by [Stefano Beretta](http://www.algolab.eu/people/beretta-stefano/)
 
 
 Last release: March 27, 2012
@@ -216,6 +216,6 @@ General Public License.
 
 Please contact *Stefano Beretta* for additional information.  
 E-mail:   <beretta@disco.unimib.it>  
-Web page: <http://bimib.disco.unimib.it/index.php/Beretta_Stefano>
+Web page: <http://www.algolab.eu/people/beretta-stefano/>
 
 
