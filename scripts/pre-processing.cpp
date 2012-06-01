@@ -51,23 +51,12 @@ using namespace std;
 /************************************************/
 unsigned long long fingerprint(const string& seq){
     unsigned long long number = 0;
-    for(unsigned int i=0; i<seq.length(); i++){
+    const size_t str_len= seq.length();
+    const char* const seqc= seq.data();
+    const static char map[]={0,0,1,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,3};
+    for(unsigned int i=0; i<str_len; i++){
         number = number<<2;
-        if(seq.at(i) == 'N' || seq.at(i) == 'n'){
-            number |= 0;
-        }
-        if(seq.at(i) == 'A' || seq.at(i) == 'a'){
-            number |= 0;
-        }
-        if(seq.at(i) == 'C' || seq.at(i) == 'c'){
-            number |= 1;
-        }
-        if(seq.at(i) == 'G' || seq.at(i) == 'g'){
-            number |= 2;
-        }
-        if(seq.at(i) == 'T' || seq.at(i) == 't'){
-            number |= 3;
-        }
+        number |= map[(size_t)seqc[i]-'A'];
     }//End_For
     return number;
 }//End_Method

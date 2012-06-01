@@ -29,55 +29,11 @@
 #include "configuration.h"
 #include "table_entry.h"
 
-
-/************************************************/
-/* Convert a DNA sequnece on alphabet {A,C,G,T} */
-/* into a number                                */
-/************************************************/
-unsigned long long fingerprint(const string& seq){
-    unsigned long long number = 0;
-    for(unsigned int i=0; i<seq.length(); i++){
-        number = number<<2;
-        if(seq.at(i) == 'N' || seq.at(i) == 'n'){
-            number |= 0;
-        }
-        if(seq.at(i) == 'A' || seq.at(i) == 'a'){
-            number |= 0;
-        }
-        if(seq.at(i) == 'C' || seq.at(i) == 'c'){
-            number |= 1;
-        }
-        if(seq.at(i) == 'G' || seq.at(i) == 'g'){
-            number |= 2;
-        }
-        if(seq.at(i) == 'T' || seq.at(i) == 't'){
-            number |= 3;
-        }
-    }//End_For
-    return number;
-}//End_Method
-
-
 //Constructors
-#if defined(LOW_MEM_USG)
-table_entry::table_entry(unsigned long long left_f, unsigned long long right_f){
-
-    this->l_next = NULL;
-    this->l_prev = NULL;
-    this->r_next = NULL;
-    this->r_prev = NULL;
-    
-    this->left_fingerprint = left_f;
-    this->right_fingerprint = right_f;
-    this->chain_next = NULL;
-    this->chain_prev = NULL;
-    this->frequency = 1;
-}
-#endif
-
+table_entry::table_entry(const String<Dna5>& seq, unsigned long long left_f, unsigned long long right_f){
 #if !defined(LOW_MEM_USG)
-table_entry::table_entry(String<Dna5>seq, unsigned long long left_f, unsigned long long right_f){
     seqan::assign(short_read,seq);
+#endif
     this->l_next = NULL;
     this->l_prev = NULL;
     this->r_next = NULL;
@@ -90,7 +46,6 @@ table_entry::table_entry(String<Dna5>seq, unsigned long long left_f, unsigned lo
     this->chain_prev = NULL;
     this->frequency = 1;
 }
-#endif
 
 
 /* NEW_OPT 
