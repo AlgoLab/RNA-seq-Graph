@@ -407,7 +407,7 @@ void linking_refinement(::std::vector<table_entry*> & links, map<unsigned long l
                         //...ma il suffissopotrebbe essere piu' corto di len
                         string head;
                         if(str_suf.length() >= len){
-                            head = seqan::toCString(seqan::prefix(suf,len));
+                            assign(head, seqan::prefix(suf,len));
                             chains[fingerprint(head)] = str_suf;
                             mapping[fingerprint(head)] = fingerprint(head);
                         }else{
@@ -429,7 +429,8 @@ void linking_refinement(::std::vector<table_entry*> & links, map<unsigned long l
                         }
                         //Aggiungere un link tra le due catene create
                         CharString l_part = chains[chain_it->first];
-                        string new_link = seqan::toCString(seqan::suffix(l_part,length(l_part) - len));
+                        string new_link;
+                        assign(new_link, seqan::suffix(l_part,length(l_part) - len));
                         unsigned long long f_l = fingerprint(new_link);
                         new_link.append(head);
                         table_entry* t_new = new table_entry(new_link,f_l,fingerprint(head));
@@ -470,7 +471,7 @@ void linking_refinement(::std::vector<table_entry*> & links, map<unsigned long l
                         modif_chains.insert(chain_it->first);
                         string head;
                         if(str_suf.length() >= len){
-                            head = seqan::toCString(seqan::prefix(suf,len));
+                            assign(head, seqan::prefix(suf,len));
                             chains[fingerprint(head)] = str_suf;
                             mapping[fingerprint(head)] = fingerprint(head);
                         }else{
@@ -492,7 +493,8 @@ void linking_refinement(::std::vector<table_entry*> & links, map<unsigned long l
                         }
                         //Aggiungere un link tra le due catene create
                         CharString l_part = chains[chain_it->first];
-                        string new_link = seqan::toCString(seqan::suffix(l_part,length(l_part) - len));
+                        string new_link;
+                        assign(new_link, seqan::suffix(l_part,length(l_part) - len));
                         unsigned long long f_l = fingerprint(new_link);
                         new_link.append(head);
                         table_entry* t_new = new table_entry(new_link,f_l,fingerprint(head));
